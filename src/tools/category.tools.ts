@@ -12,8 +12,8 @@ export function registerCategoryTools(server: McpServer): void {
     'category_list',
     'Lấy danh sách các thể loại truyện trong hệ thống (hỗ trợ tìm kiếm, phân trang).',
     {
-      search: z.string().optional().describe('Từ khóa tìm kiếm tên thể loại'),
-      per_page: z.number().int().positive().max(100).optional().describe('Số lượng thể loại trên mỗi trang'),
+      search: z.string().max(255).optional().describe('Từ khóa tìm kiếm tên thể loại (tối đa 255 ký tự)'),
+      per_page: z.number().int().positive().max(100).optional().describe('Số lượng thể loại trên mỗi trang (mặc định 20, tối đa 100)'),
       page: z.number().int().positive().optional().describe('Số trang'),
     },
     async (params) => {
@@ -44,19 +44,13 @@ export function registerCategoryTools(server: McpServer): void {
     'category_create',
     'Thêm thể loại truyện mới vào hệ thống (tự sinh slug duy nhất nếu để trống).',
     {
-      name: z.string().min(1).describe('Tên thể loại'),
-      slug: z.string().optional().describe('Đường dẫn tĩnh slug (nếu không cung cấp hệ thống sẽ tự sinh)'),
-      image: z.string().optional().describe('URL ảnh đại diện thể loại'),
-      seo_keywords: z.string().optional().describe('Từ khóa SEO'),
-      seo_description: z.string().optional().describe('Mô tả SEO'),
-      note: z.string().optional().describe('Ghi chú nội bộ về thể loại'),
+      name: z.string().min(1).max(255).describe('Tên thể loại (bắt buộc, duy nhất, tối đa 255 ký tự)'),
+      slug: z.string().max(255).optional().describe('Đường dẫn tĩnh slug (tùy chọn, duy nhất, tự sinh nếu để trống)'),
+      seo_keywords: z.string().max(500).optional().describe('Từ khóa SEO (tối đa 500 ký tự)'),
+      seo_description: z.string().max(1000).optional().describe('Mô tả SEO (tối đa 1000 ký tự)'),
+      note: z.string().max(1000).optional().describe('Ghi chú nội bộ về thể loại (tối đa 1000 ký tự)'),
     },
-    async ({ name, slug, image, seo_keywords, seo_description, note }) => {
-      const meta = image || seo_keywords || seo_description || note
-        ? { image, seo_keywords, seo_description, note }
-        : undefined;
-
-      const payload = { name, slug, meta };
+    async (payload) => {
       const res = await apiClient.post<CategoryDetail>('categories', payload);
       return {
         content: [{ type: 'text', text: JSON.stringify(res, null, 2) }],
@@ -70,19 +64,13 @@ export function registerCategoryTools(server: McpServer): void {
     'Cập nhật thông tin tên, slug, ghi chú hoặc SEO của thể loại truyện.',
     {
       id: z.number().int().positive().describe('ID của thể loại cần sửa'),
-      name: z.string().optional().describe('Tên thể loại mới'),
-      slug: z.string().optional().describe('Slug mới'),
-      image: z.string().optional().describe('URL ảnh đại diện mới'),
-      seo_keywords: z.string().optional().describe('Từ khóa SEO mới'),
-      seo_description: z.string().optional().describe('Mô tả SEO mới'),
-      note: z.string().optional().describe('Ghi chú mới'),
+      name: z.string().min(1).max(255).optional().describe('Tên thể loại mới (tối đa 255 ký tự)'),
+      slug: z.string().max(255).optional().describe('Slug mới (tối đa 255 ký tự)'),
+      seo_keywords: z.string().max(500).optional().describe('Từ khóa SEO mới (tối đa 500 ký tự)'),
+      seo_description: z.string().max(1000).optional().describe('Mô tả SEO mới (tối đa 1000 ký tự)'),
+      note: z.string().max(1000).optional().describe('Ghi chú mới (tối đa 1000 ký tự)'),
     },
-    async ({ id, name, slug, image, seo_keywords, seo_description, note }) => {
-      const meta = image !== undefined || seo_keywords !== undefined || seo_description !== undefined || note !== undefined
-        ? { image, seo_keywords, seo_description, note }
-        : undefined;
-
-      const payload = { name, slug, meta };
+    async ({ id, ...payload }) => {
       const res = await apiClient.patch<CategoryDetail>(`categories/${id}`, payload);
       return {
         content: [{ type: 'text', text: JSON.stringify(res, null, 2) }],

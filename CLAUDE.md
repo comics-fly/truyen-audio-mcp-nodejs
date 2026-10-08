@@ -12,9 +12,9 @@
 ## Thông tin dự án
 - **Tên dự án**: Truyen Audio MCP Server
 - **Mục tiêu**: Cung cấp MCP server (Model Context Protocol) bằng Node.js phục vụ hệ sinh thái Truyện Audio.
-- **Backend liên kết**: [truyen-audio-laravel](../truyen-audio-laravel/)
+- **Backend liên kết**: [truyen-audio](../truyen-audio/)
 - **Tech stack**: Node.js, `@modelcontextprotocol/sdk`
 
 ## MCP 
-- `gitnexus`: Đọc và phân tích API/codebase qua repo `/home/Dev/truyen-audio/truyen-audio-laravel`
+- `gitnexus`: Đọc và phân tích API/codebase qua repo `/home/dev/Project/truyen-audio`
 - `gitnexus analyze -f --skip-skills --skip-agents-md`: Phân tích codebase và xuất ra file JSON chứa thông tin API/codebase.
