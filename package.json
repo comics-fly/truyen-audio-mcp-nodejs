@@ -1,11 +1,11 @@
 {
   "name": "truyen-audio-mcp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "MCP Server kết nối API hệ thống Truyện Audio",
   "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "truyen-audio-mcp": "./dist/index.js"
+    "truyen-audio-mcp": "dist/index.js"
   },
   "files": [
     "dist"
