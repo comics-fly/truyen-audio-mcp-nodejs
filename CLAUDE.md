@@ -16,6 +16,37 @@
 - **Repository**: `comics-fly/truyen-audio-mcp-nodejs`
 - **Tech stack**: Node.js 20+, `@modelcontextprotocol/sdk`, TypeScript, esbuild
 
+## Quy định Git (Git Workflow)
+- **Quy tắc Commit**:
+  - **Tiêu đề commit**: Tuân thủ Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:`, `perf:`, `ci:`), nội dung tiêu đề **bắt buộc viết bằng tiếng Việt có dấu**, súc tích, mô tả chính xác mục tiêu thay đổi.
+  - **Mô tả commit (body)**: **Bắt buộc viết đầy đủ bằng tiếng Việt có dấu**, giải thích chi tiết lý do thay đổi, danh sách các chỉnh sửa cụ thể và phạm vi ảnh hưởng.
+  - **Định dạng mẫu**:
+    ```
+    <loại>(<phạm vi>): <tiêu đề ngắn gọn bằng tiếng Việt có dấu>
+
+    <mô tả tổng quan lý do và mục tiêu thay đổi bằng tiếng Việt có dấu>
+
+    Chi tiết các thay đổi:
+    - <thay đổi cụ thể 1>
+    - <thay đổi cụ thể 2>
+    ```
+  - **Phạm vi commit**: Chỉ commit ở local, **tuyệt đối không tự ý push** lên remote repository khi chưa có yêu cầu trực tiếp từ người dùng.
+  - **Không thêm attribution**: Tuyệt đối không thêm dòng `Co-Authored-By` vào cuối commit message.
+
+- **Quy tắc Git Tag & Release**:
+  - **Tên tag**: Tuân thủ chuẩn SemVer có tiền tố `v` (ví dụ `v1.1.0`, `v1.0.1`).
+  - **Mô tả tag**: Phải sử dụng annotated tag (`git tag -a <tag> -m "..."`), thông điệp tag **bắt buộc viết đầy đủ tiêu đề và nội dung mô tả bằng tiếng Việt có dấu**, tóm tắt toàn bộ tính năng mới, bản sửa lỗi và cải tiến trong bản phát hành.
+  - **Định dạng mẫu tạo tag**:
+    ```bash
+    git tag -a vX.Y.Z -m "Phát hành phiên bản vX.Y.Z: <tiêu đề tóm tắt bằng tiếng Việt có dấu>
+
+    Mô tả chi tiết các thay đổi:
+    - <tính năng mới / cải tiến 1>
+    - <tính năng mới / cải tiến 2>
+    - <sửa lỗi nếu có>"
+    ```
+  - **Không tự ý push tag**: Tuyệt đối không tự ý push tag lên remote nếu người dùng chưa chỉ định.
+
 ## Hướng dẫn làm việc với MCP GitHub
 MCP GitHub (`@modelcontextprotocol/server-github`) được cấu hình trong [.mcp.json](.mcp.json) cho phép agent tương tác trực tiếp với GitHub repository:
 - **Thông tin Repository**:
@@ -85,10 +116,25 @@ Dự án được cấu hình quy trình CI/CD tự động đóng gói và xu�
 2. **Nâng version package**:
    - Cập nhật trường `version` trong [package.json](package.json) theo chuẩn SemVer (`patch`, `minor`, `major`).
 3. **Commit & Push**:
-   - Tạo commit với định dạng: `chore(release): vX.Y.Z`.
-   - Push commit lên nhánh `main`.
-4. **Tạo GitHub Release**:
-   - Tạo Release mới gắn với tag tương ứng (ví dụ `v1.0.1`) thông qua GitHub Web UI, `gh release create`, hoặc các công cụ MCP GitHub.
+   - Tạo commit với tiêu đề và mô tả chi tiết bằng tiếng Việt có dấu:
+     ```bash
+     git commit -m "chore(release): phát hành phiên bản vX.Y.Z
+
+     Mô tả các thay đổi trong bản phát hành:
+     - <nội dung thay đổi 1>
+     - <nội dung thay đổi 2>"
+     ```
+   - Chỉ push commit lên nhánh `main` khi có yêu cầu trực tiếp từ người dùng.
+4. **Tạo GitHub Release & Tag**:
+   - Tạo annotated tag với tiêu đề và mô tả đầy đủ bằng tiếng Việt có dấu:
+     ```bash
+     git tag -a vX.Y.Z -m "Phát hành phiên bản vX.Y.Z: <tiêu đề tóm tắt>
+
+     Chi tiết tính năng và bản vá:
+     - <tính năng 1>
+     - <tính năng 2>"
+     ```
+   - Tạo Release trên GitHub gắn với tag vừa tạo (thông qua GitHub Web UI, `gh release create`, hoặc MCP GitHub) với release notes bằng tiếng Việt có dấu.
    - Khi Release được Publish, workflow `Publish to NPM` sẽ tự động chạy và đẩy phiên bản mới lên npmjs.com.
 5. **Xác nhận**:
    - Kiểm tra log chạy của Action trên GitHub.
@@ -100,3 +146,5 @@ Dự án được cấu hình quy trình CI/CD tự động đóng gói và xu�
 ## MCP Tools Khác
 - `gitnexus`: Đọc và phân tích API/codebase qua repo `/home/dev/Project/truyen-audio`
 - `gitnexus analyze -f --skip-skills --skip-agents-md`: Phân tích codebase và xuất ra file JSON chứa thông tin API/codebase.
+
+
