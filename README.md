@@ -68,16 +68,18 @@ TRUYEN_AUDIO_API_URL=http://localhost:8000/mcp
 TRUYEN_AUDIO_API_TOKEN=your_mcp_bearer_token_here
 ```
 
-### 2. Cấu hình Claude Desktop (`claude_desktop_config.json`)
-Thêm cấu hình sau vào file cấu hình của Claude Desktop:
+### 2. Cách 1: Sử dụng trực tiếp qua NPM với `npx` (Khuyên dùng - Không cần path file)
+Package đã được xuất bản chính thức trên NPM Registry với tên [`truyen-audio-mcp`](https://www.npmjs.com/package/truyen-audio-mcp). Bạn có thể cấu hình client chạy trực tiếp mà **không cần clone mã nguồn hay khai báo đường dẫn file**:
 
+#### Cấu hình Claude Desktop (`claude_desktop_config.json`)
 ```json
 {
   "mcpServers": {
     "truyen-audio": {
-      "command": "node",
+      "command": "npx",
       "args": [
-        "/home/Dev/truyen-audio/truyen-audio-mcp-nodejs/dist/index.js"
+        "-y",
+        "truyen-audio-mcp@latest"
       ],
       "env": {
         "TRUYEN_AUDIO_API_URL": "http://localhost:8000/mcp",
@@ -88,7 +90,25 @@ Thêm cấu hình sau vào file cấu hình của Claude Desktop:
 }
 ```
 
-### 3. Cấu hình Claude Code / MCP Config (`.mcp.json`)
+#### Cấu hình Claude Code (`.mcp.json`)
+```json
+{
+  "mcpServers": {
+    "truyen-audio": {
+      "command": "npx",
+      "args": ["-y", "truyen-audio-mcp@latest"],
+      "env": {
+        "TRUYEN_AUDIO_API_URL": "http://localhost:8000/mcp",
+        "TRUYEN_AUDIO_API_TOKEN": "your_mcp_bearer_token_here"
+      }
+    }
+  }
+}
+```
+
+### 3. Cách 2: Chạy từ mã nguồn Local (Dành cho nhà phát triển)
+Nếu bạn đang phát triển hoặc muốn chạy trực tiếp file bundle sau khi `npm run build`:
+
 ```json
 {
   "mcpServers": {
