@@ -88,6 +88,10 @@ export class McpApiClient {
   put<T>(endpoint: string, body?: unknown) {
     return this.request<T>('PUT', endpoint, body);
   }
+
+  delete<T>(endpoint: string, queryParams?: Record<string, string | number | boolean | undefined>) {
+    return this.request<T>('DELETE', endpoint, undefined, queryParams);
+  }
 }
 
 // Singleton client dùng chung

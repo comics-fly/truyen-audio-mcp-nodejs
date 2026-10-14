@@ -72,6 +72,27 @@ export interface StoryShortDescriptionResponse {
   readonly stats: TextStats;
 }
 
+export interface StoryCategoryItem {
+  readonly id: number;
+  readonly name: string;
+  readonly slug: string;
+}
+
+export interface StoryCategoriesResponse {
+  readonly story_id: number;
+  readonly story_title: string;
+  readonly categories: readonly StoryCategoryItem[];
+}
+
+export interface AttachStoryCategoriesPayload {
+  readonly category_ids?: readonly number[];
+  readonly category_id?: number;
+}
+
+export interface SyncStoryCategoriesPayload {
+  readonly category_ids: readonly number[];
+}
+
 export interface IndexStoryParams {
   readonly search?: string;
   readonly status?: StoryStatus;
@@ -171,6 +192,22 @@ export interface UpdateChapterPayload {
 
 export interface UpdateChapterSchedulePayload {
   readonly scheduled_publish_at: string;
+}
+
+export interface ChapterScheduleResponse {
+  readonly id: number;
+  readonly story_id: number;
+  readonly chapter_number: number;
+  readonly title: string;
+  readonly slug: string;
+  readonly status: ChapterStatus;
+  readonly scheduled_publish_at: string | null;
+  readonly meta: {
+    readonly is_locked: boolean;
+    readonly unlock_price: number;
+    readonly scheduled_publish_at: string | null;
+  };
+  readonly updated_at: string | null;
 }
 
 export interface ChapterSummaryResponse {

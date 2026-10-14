@@ -38,7 +38,7 @@ test('Đăng ký đầy đủ toàn bộ các MCP Tools cần thiết', () => {
   // Đảm bảo không ném ngoại lệ khi đăng ký các công cụ
   assert.ok(server);
 
-  // Kiểm tra 23 công cụ đã được đăng ký
+  // Kiểm tra 27 công cụ đã được đăng ký
   const registeredToolNames = Object.keys(
     (server as unknown as { _registeredTools: Record<string, unknown> })._registeredTools || {}
   );
@@ -51,6 +51,10 @@ test('Đăng ký đầy đủ toàn bộ các MCP Tools cần thiết', () => {
     'story_update',
     'story_update_summary',
     'story_update_short_description',
+    'story_get_categories',
+    'story_attach_categories',
+    'story_sync_categories',
+    'story_detach_category',
     'chapter_list_by_story',
     'chapter_create',
     'chapter_batch_summaries',
@@ -71,7 +75,7 @@ test('Đăng ký đầy đủ toàn bộ các MCP Tools cần thiết', () => {
   for (const name of expectedTools) {
     assert.ok(registeredToolNames.includes(name), `Thiếu tool: ${name}`);
   }
-  assert.equal(registeredToolNames.length, 23);
+  assert.equal(registeredToolNames.length, 27);
 });
 
 test('Validation schema của các tools phản ánh đúng rule của Laravel backend', () => {
@@ -113,12 +117,31 @@ test('Validation schema của các tools phản ánh đúng rule của Laravel b
   assert.equal(storyShortDescSchema.safeParse({ id: 1, short_description: 'Mô tả ngắn' }).success, true);
   assert.equal(storyShortDescSchema.safeParse({ id: 1, short_description: '' }).success, false);
 
-  // 4. chapter_list_by_story
+  // 4. story categories management: get, attach, sync, detach
+  const storyGetCatsSchema = tools.story_get_categories.inputSchema;
+  assert.equal(storyGetCatsSchema.safeParse({ id: 10 }).success, true);
+  assert.equal(storyGetCatsSchema.safeParse({ id: -1 }).success, false);
+
+  const storyAttachCatsSchema = tools.story_attach_categories.inputSchema;
+  assert.equal(storyAttachCatsSchema.safeParse({ id: 10, category_ids: [1, 2, 3] }).success, true);
+  assert.equal(storyAttachCatsSchema.safeParse({ id: 10, category_id: 5 }).success, true);
+  assert.equal(storyAttachCatsSchema.safeParse({ id: 10, category_ids: Array.from({ length: 51 }, (_, i) => i + 1) }).success, false, 'max 50 thể loại');
+
+  const storySyncCatsSchema = tools.story_sync_categories.inputSchema;
+  assert.equal(storySyncCatsSchema.safeParse({ id: 10, category_ids: [1, 2] }).success, true);
+  assert.equal(storySyncCatsSchema.safeParse({ id: 10, category_ids: [] }).success, true, 'cho phép mảng rỗng để gỡ hết thể loại');
+  assert.equal(storySyncCatsSchema.safeParse({ id: 10 }).success, false, 'category_ids bắt buộc');
+
+  const storyDetachCatSchema = tools.story_detach_category.inputSchema;
+  assert.equal(storyDetachCatSchema.safeParse({ id: 10, category_id: 3 }).success, true);
+  assert.equal(storyDetachCatSchema.safeParse({ id: 10, category_id: 0 }).success, false);
+
+  // 5. chapter_list_by_story
   const chapterListSchema = tools.chapter_list_by_story.inputSchema;
   assert.equal(chapterListSchema.safeParse({ story_id: 1, status: 'scheduled', direction: 'desc', per_page: 50 }).success, true);
   assert.equal(chapterListSchema.safeParse({ story_id: 1, per_page: 51 }).success, false, 'per_page max 50');
 
-  // 5. chapter_create & update
+  // 6. chapter_create & update
   const chapterCreateSchema = tools.chapter_create.inputSchema;
   assert.equal(chapterCreateSchema.safeParse({
     story_id: 1,
@@ -134,20 +157,20 @@ test('Validation schema của các tools phản ánh đúng rule của Laravel b
   }).success, true);
   assert.equal(chapterCreateSchema.safeParse({ story_id: 1, unlock_price: -5 }).success, false, 'unlock_price >= 0');
 
-  // 6. chapter_schedule
+  // 7. chapter_schedule
   const chapterScheduleSchema = tools.chapter_schedule.inputSchema;
   assert.equal(chapterScheduleSchema.safeParse({ id: 1, scheduled_publish_at: '2026-10-15T00:00:00Z' }).success, true);
   assert.equal(chapterScheduleSchema.safeParse({ id: 1, scheduled_publish_at: '' }).success, false);
 
-  // 7. chapter_get_summary & chapter_get_content
+  // 8. chapter_get_summary & chapter_get_content
   assert.equal(tools.chapter_get_summary.inputSchema.safeParse({ id: 5 }).success, true);
   assert.equal(tools.chapter_get_content.inputSchema.safeParse({ id: 5 }).success, true);
 
-  // 8. chapter_update
+  // 9. chapter_update
   const chapterUpdateSchema = tools.chapter_update.inputSchema;
   assert.equal(chapterUpdateSchema.safeParse({ id: 1, chapter_number: 5, status: 'scheduled', unlock_price: 10 }).success, true);
 
-  // 9. category_create & update
+  // 10. category_create & update
   const categoryCreateSchema = tools.category_create.inputSchema;
   assert.equal(categoryCreateSchema.safeParse({
     name: 'Tiên Hiệp',

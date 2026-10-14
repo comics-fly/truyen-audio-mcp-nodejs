@@ -5,6 +5,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { apiClient } from '../client.js';
 import type {
+  StoryCategoriesResponse,
   StoryDetail,
   StoryShortDescriptionResponse,
   StorySummary,
@@ -141,6 +142,71 @@ export function registerStoryTools(server: McpServer): void {
     },
     async ({ id, short_description }) => {
       const res = await apiClient.patch<StoryDetail>(`stories/${id}/short-description`, { short_description });
+      return {
+        content: [{ type: 'text', text: JSON.stringify(res, null, 2) }],
+      };
+    }
+  );
+
+  // 9. Lấy danh sách thể loại của truyện
+  server.tool(
+    'story_get_categories',
+    'Lấy danh sách các thể loại đang được liên kết với truyện.',
+    {
+      id: z.number().int().positive().describe('ID của truyện cần xem thể loại'),
+    },
+    async ({ id }) => {
+      const res = await apiClient.get<StoryCategoriesResponse>(`stories/${id}/categories`);
+      return {
+        content: [{ type: 'text', text: JSON.stringify(res, null, 2) }],
+      };
+    }
+  );
+
+  // 10. Gán thêm thể loại vào truyện
+  server.tool(
+    'story_attach_categories',
+    'Gán thêm một hoặc nhiều thể loại vào truyện (không làm mất thể loại hiện có). Cần cung cấp category_ids hoặc category_id.',
+    {
+      id: z.number().int().positive().describe('ID của truyện cần gán thể loại'),
+      category_ids: z.array(z.number().int().positive()).max(50).optional().describe('Danh sách ID thể loại cần gán thêm (tối đa 50 thể loại)'),
+      category_id: z.number().int().positive().optional().describe('ID thể loại đơn lẻ cần gán thêm'),
+    },
+    async ({ id, category_ids, category_id }) => {
+      const payload = { category_ids, category_id };
+      const res = await apiClient.post<StoryCategoriesResponse>(`stories/${id}/categories`, payload);
+      return {
+        content: [{ type: 'text', text: JSON.stringify(res, null, 2) }],
+      };
+    }
+  );
+
+  // 11. Đồng bộ thể loại của truyện
+  server.tool(
+    'story_sync_categories',
+    'Đồng bộ toàn bộ danh sách thể loại của truyện (thay thế toàn bộ thể loại hiện có bằng danh sách mới; truyền mảng rỗng để gỡ hết thể loại).',
+    {
+      id: z.number().int().positive().describe('ID của truyện cần đồng bộ thể loại'),
+      category_ids: z.array(z.number().int().positive()).max(50).describe('Danh sách ID thể loại mới của truyện (tối đa 50 thể loại)'),
+    },
+    async ({ id, category_ids }) => {
+      const res = await apiClient.put<StoryCategoriesResponse>(`stories/${id}/categories`, { category_ids });
+      return {
+        content: [{ type: 'text', text: JSON.stringify(res, null, 2) }],
+      };
+    }
+  );
+
+  // 12. Gỡ bỏ một thể loại khỏi truyện
+  server.tool(
+    'story_detach_category',
+    'Gỡ bỏ một thể loại cụ thể ra khỏi truyện.',
+    {
+      id: z.number().int().positive().describe('ID của truyện'),
+      category_id: z.number().int().positive().describe('ID thể loại cần gỡ bỏ khỏi truyện'),
+    },
+    async ({ id, category_id }) => {
+      const res = await apiClient.delete<StoryCategoriesResponse>(`stories/${id}/categories/${category_id}`);
       return {
         content: [{ type: 'text', text: JSON.stringify(res, null, 2) }],
       };

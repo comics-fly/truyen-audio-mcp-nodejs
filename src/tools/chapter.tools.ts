@@ -8,6 +8,7 @@ import type {
   ChapterContentResponse,
   ChapterDetail,
   ChapterItem,
+  ChapterScheduleResponse,
   ChapterSummaryItem,
   ChapterSummaryResponse,
   ContextWindowResult,
@@ -126,7 +127,7 @@ export function registerChapterTools(server: McpServer): void {
       scheduled_publish_at: z.string().min(1).describe('Thời gian hẹn xuất bản (chuỗi ngày giờ ISO 8601, phải sau thời điểm hiện tại)'),
     },
     async ({ id, scheduled_publish_at }) => {
-      const res = await apiClient.patch<ChapterDetail>(`chapters/${id}/schedule`, { scheduled_publish_at });
+      const res = await apiClient.patch<ChapterScheduleResponse>(`chapters/${id}/schedule`, { scheduled_publish_at });
       return {
         content: [{ type: 'text', text: JSON.stringify(res, null, 2) }],
       };
