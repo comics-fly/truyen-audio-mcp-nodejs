@@ -109,6 +109,23 @@ test('Validation schema của các tools phản ánh đúng rule của Laravel b
   assert.equal(storyCreateSchema.safeParse({ title: 'Truyện mới', user_id: 2 }).success, true);
   assert.equal(storyCreateSchema.safeParse({ title: '' }).success, false, 'title không được rỗng');
 
+  const storyUpdateSchema = tools.story_update.inputSchema;
+  assert.equal(storyUpdateSchema.safeParse({
+    id: 1,
+    title: 'Tiêu đề cập nhật',
+    slug: 'tieu-de-cap-nhat',
+    status: 'published',
+    summary: 'Tóm tắt nội dung',
+    short_description: 'Mô tả ngắn',
+    seo_keywords: 'tien hiep, truyen audio',
+    seo_description: 'Mo ta SEO truyen audio',
+    category_ids: [1, 2, 3],
+  }).success, true);
+  assert.equal(storyUpdateSchema.safeParse({ id: 1, title: '' }).success, false, 'title không được rỗng');
+  assert.equal(storyUpdateSchema.safeParse({ id: 1, slug: '' }).success, false, 'slug không được rỗng');
+  assert.equal(storyUpdateSchema.safeParse({ id: 1, category_ids: Array.from({ length: 51 }, (_, i) => i + 1) }).success, false, 'max 50 category_ids');
+  assert.equal(storyUpdateSchema.safeParse({ id: 1, category_ids: [-1] }).success, false, 'category_id phải dương');
+
   const storySummarySchema = tools.story_update_summary.inputSchema;
   assert.equal(storySummarySchema.safeParse({ id: 1, summary: 'Tóm tắt mới' }).success, true);
   assert.equal(storySummarySchema.safeParse({ id: 1, summary: '' }).success, false);

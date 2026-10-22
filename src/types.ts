@@ -2,9 +2,19 @@
  * Định nghĩa các kiểu dữ liệu cho dự án Truyen Audio MCP
  */
 
+export interface ApiError {
+  readonly code: string;
+  readonly message: string;
+  readonly details?: unknown;
+  readonly hint?: string;
+  readonly allowed_values?: readonly string[];
+}
+
 export interface ApiResponse<T> {
-  readonly status: 'success' | 'error';
+  readonly success?: boolean;
+  readonly status?: 'success' | 'error';
   readonly data?: T;
+  readonly error?: ApiError | null;
   readonly error_code?: string;
   readonly message?: string;
   readonly meta?: PaginationMeta;
@@ -107,9 +117,14 @@ export interface StoreStoryPayload {
 }
 
 export interface UpdateStoryPayload {
+  readonly title?: string;
+  readonly slug?: string;
   readonly status?: StoryStatus;
   readonly short_description?: string;
   readonly summary?: string;
+  readonly seo_keywords?: string;
+  readonly seo_description?: string;
+  readonly category_ids?: readonly number[];
 }
 
 export interface UpdateStorySummaryPayload {

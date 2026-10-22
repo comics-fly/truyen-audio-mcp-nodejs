@@ -100,15 +100,19 @@ export function registerStoryTools(server: McpServer): void {
   // 6. Cập nhật truyện tổng thể
   server.tool(
     'story_update',
-    'Cập nhật trạng thái (draft/published/archived), mô tả ngắn hoặc tóm tắt của truyện.',
+    'Cập nhật thông tin tổng thể của truyện (tiêu đề, slug, trạng thái draft/published/archived, mô tả ngắn, tóm tắt, SEO metadata, danh sách ID thể loại).',
     {
       id: z.number().int().positive().describe('ID của truyện cần cập nhật'),
+      title: z.string().min(1).max(255).optional().describe('Tiêu đề mới của truyện (1-255 ký tự)'),
+      slug: z.string().min(1).max(255).optional().describe('Đường dẫn thân thiện (slug) của truyện (1-255 ký tự, tự động chuẩn hóa)'),
       status: z.enum(['draft', 'published', 'archived']).optional().describe('Trạng thái mới của truyện'),
       short_description: z.string().optional().describe('Mô tả ngắn mới của truyện'),
       summary: z.string().optional().describe('Tóm tắt nội dung mới của truyện'),
+      seo_keywords: z.string().max(500).optional().describe('Từ khóa SEO của truyện (tối đa 500 ký tự)'),
+      seo_description: z.string().max(1000).optional().describe('Mô tả SEO của truyện (tối đa 1000 ký tự)'),
+      category_ids: z.array(z.number().int().positive()).max(50).optional().describe('Danh sách ID thể loại gắn cho truyện (tối đa 50 thể loại)'),
     },
-    async ({ id, status, short_description, summary }) => {
-      const payload = { status, short_description, summary };
+    async ({ id, ...payload }) => {
       const res = await apiClient.patch<StoryDetail>(`stories/${id}`, payload);
       return {
         content: [{ type: 'text', text: JSON.stringify(res, null, 2) }],
