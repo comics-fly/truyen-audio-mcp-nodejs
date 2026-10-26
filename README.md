@@ -6,29 +6,36 @@ Model Context Protocol (MCP) server xây dựng bằng **Node.js** & **TypeScrip
 
 ## Tính Năng & Danh Sách Tools
 
+Hệ thống cung cấp **20 MCP tools** chuẩn hóa, hỗ trợ tối ưu token cho AI Agent thông qua **Sparse Fieldsets (`fields`)** và các chế độ nạp text (`full`/`minimal`/`none`):
+
 ### 1. Quản lý Truyện (Stories)
-- `story_list`: Tìm kiếm, lọc theo trạng thái/thể loại và phân trang danh sách truyện.
-- `story_get`: Lấy chi tiết truyện kèm mô tả ngắn, tóm tắt và metadata.
-- `story_create`: Tạo truyện mới ở trạng thái nháp (`draft`).
-- `story_update`: Cập nhật trạng thái (`draft`/`published`/`archived`), mô tả ngắn hoặc tóm tắt truyện.
+- `story_list`: Tìm kiếm, lọc theo trạng thái (`draft`/`ongoing`/`completed`/`paused`/`scheduled`), thể loại và phân trang danh sách truyện (hỗ trợ `fields`).
+- `story_get`: Lấy chi tiết truyện kèm thể loại, metadata (hỗ trợ `fields`, `summary: full|minimal|none`, `short_description: full|minimal|none`).
+- `story_create`: Tạo truyện mới (mặc định `draft`, tự sinh slug, hỗ trợ hẹn giờ đăng `scheduled_publish_at` và gán thể loại).
+- `story_update`: Cập nhật toàn diện truyện (tiêu đề, slug, trạng thái, hẹn giờ đăng, tóm tắt, mô tả ngắn, SEO, đồng bộ/thêm/gỡ thể loại).
 
 ### 2. Quản lý Chương & Context Window (Chapters)
-- `chapter_list_by_story`: Lấy danh sách chương theo truyện (hỗ trợ phân trang, sắp xếp).
-- `chapter_get`: Lấy chi tiết chương kèm toàn văn nội dung (`content`), tóm tắt (`summary`) và thông tin khóa/xu.
-- `chapter_create`: Thêm chương mới cho truyện.
-- `chapter_update`: Cập nhật trạng thái, tóm tắt hoặc toàn văn nội dung chương.
-- `chapter_update_summary`: Cập nhật nhanh nội dung tóm tắt chương.
-- `chapter_update_content`: Cập nhật nhanh nội dung văn bản toàn chương.
-- `chapter_batch_summaries`: Lấy tóm tắt hàng loạt nhiều chương (tối đa 20 chương/lần).
-- `chapter_context_summary`: Lấy cửa sổ ngữ cảnh (Context Window) gồm các chương liền trước và liền sau phục vụ Agent suy luận cốt truyện.
+- `chapter_list_by_story`: Lấy danh sách chương theo truyện (hỗ trợ phân trang, lọc trạng thái, sắp xếp thứ tự, `fields`).
+- `chapter_create`: Thêm chương mới cho truyện (tự động tăng số thứ tự chương, hỗ trợ hẹn giờ đăng, tóm tắt, nội dung, khóa/giá).
+- `chapter_batch_summaries`: Lấy tóm tắt hàng loạt nhiều chương qua danh sách ID hoặc số thứ tự chương (tối đa 20 chương/lần).
+- `chapter_get`: Chi tiết chương (hỗ trợ `fields`, chế độ `content: full|minimal|none` và `summary: full|minimal|none` tiết kiệm token).
+- `chapter_update`: Cập nhật tổng thể chương (số chương, tiêu đề, slug, trạng thái, hẹn giờ đăng, tóm tắt, nội dung, khóa/giá).
+- `chapter_context_summary`: Cửa sổ ngữ cảnh (Context Window) gồm các chương liền trước và liền sau phục vụ Agent theo dõi mạch truyện.
 
 ### 3. Quản lý Thể Loại (Categories)
-- `category_list`: Danh sách thể loại truyện.
-- `category_get`: Chi tiết thể loại kèm số lượng truyện và SEO metadata.
-- `category_create`: Tạo thể loại mới (tự sinh slug).
-- `category_update`: Chỉnh sửa thông tin thể loại.
+- `category_list`: Danh sách thể loại truyện trong hệ thống (hỗ trợ tìm kiếm, phân trang, `fields`).
+- `category_get`: Chi tiết thể loại kèm metadata SEO và số lượng truyện liên kết.
+- `category_create`: Tạo thể loại mới (chỉ Root, tự sinh slug duy nhất).
+- `category_update`: Chỉnh sửa tên, slug, SEO hoặc ghi chú thể loại (chỉ Root).
 
-### 4. Hệ Thống & Kiểm Tra
+### 4. Quản lý Bình Luận (Comments)
+- `comment_list`: Danh sách bình luận theo truyện hoặc toàn hệ thống (hỗ trợ lọc `story_id`, `user_id`, `parent_id`, tìm kiếm, phân trang, `fields`).
+- `comment_get`: Chi tiết bình luận kèm thông tin người đăng và danh sách câu trả lời.
+- `comment_create`: Đăng bình luận cho truyện hoặc trả lời bình luận khác (độ sâu tối đa 4 cấp, độ dài 2-2000 ký tự).
+- `comment_update`: Chỉnh sửa nội dung bình luận (chỉ tác giả có quyền).
+- `comment_delete`: Xóa bình luận khỏi hệ thống (kiểm duyệt).
+
+### 5. Hệ Thống & Kiểm Tra
 - `mcp_info`: Kiểm tra trạng thái kết nối và phiên bản API backend Laravel.
 
 ---
@@ -137,7 +144,8 @@ Nếu bạn đang phát triển hoặc muốn chạy trực tiếp file bundle s
 │   └── tools/
 │       ├── story.tools.ts    # Các công cụ quản lý Truyện
 │       ├── chapter.tools.ts  # Các công cụ quản lý Chapter & Context Window
-│       └── category.tools.ts # Các công cụ quản lý Thể loại
+│       ├── category.tools.ts # Các công cụ quản lý Thể loại
+│       └── comment.tools.ts  # Các công cụ quản lý Bình luận
 ├── test/
 │   └── self-check.test.ts    # Unit test tự động
 ├── dist/                     # Thư mục mã nguồn sau khi build

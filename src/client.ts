@@ -36,7 +36,7 @@ export class McpApiClient {
     method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
     endpoint: string,
     body?: unknown,
-    queryParams?: Record<string, string | number | boolean | undefined>
+    queryParams?: Record<string, string | number | boolean | readonly string[] | undefined>
   ): Promise<ApiResponse<T>> {
     let url = `${this.baseUrl}/${endpoint.replace(/^\/+/, '')}`;
 
@@ -44,7 +44,11 @@ export class McpApiClient {
       const searchParams = new URLSearchParams();
       for (const [key, value] of Object.entries(queryParams)) {
         if (value !== undefined && value !== null && value !== '') {
-          searchParams.append(key, String(value));
+          if (Array.isArray(value)) {
+            searchParams.append(key, value.join(','));
+          } else {
+            searchParams.append(key, String(value));
+          }
         }
       }
       const queryString = searchParams.toString();
@@ -60,7 +64,16 @@ export class McpApiClient {
         body: body ? JSON.stringify(body) : undefined,
       });
 
-      const json = (await response.json()) as ApiResponse<T>;
+      if (response.status === 204) {
+        return {
+          status: 'success',
+          success: true,
+          data: undefined as unknown as T,
+        };
+      }
+
+      const text = await response.text();
+      const json = text ? (JSON.parse(text) as ApiResponse<T>) : ({ status: 'success', success: true } as ApiResponse<T>);
       return json;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown network error';
@@ -73,23 +86,35 @@ export class McpApiClient {
   }
 
   // Tiện ích HTTP cơ bản
-  get<T>(endpoint: string, queryParams?: Record<string, string | number | boolean | undefined>) {
+  get<T>(endpoint: string, queryParams?: Record<string, string | number | boolean | readonly string[] | undefined>) {
     return this.request<T>('GET', endpoint, undefined, queryParams);
   }
 
-  post<T>(endpoint: string, body?: unknown) {
-    return this.request<T>('POST', endpoint, body);
+  post<T>(
+    endpoint: string,
+    body?: unknown,
+    queryParams?: Record<string, string | number | boolean | readonly string[] | undefined>
+  ) {
+    return this.request<T>('POST', endpoint, body, queryParams);
   }
 
-  patch<T>(endpoint: string, body?: unknown) {
-    return this.request<T>('PATCH', endpoint, body);
+  patch<T>(
+    endpoint: string,
+    body?: unknown,
+    queryParams?: Record<string, string | number | boolean | readonly string[] | undefined>
+  ) {
+    return this.request<T>('PATCH', endpoint, body, queryParams);
   }
 
-  put<T>(endpoint: string, body?: unknown) {
-    return this.request<T>('PUT', endpoint, body);
+  put<T>(
+    endpoint: string,
+    body?: unknown,
+    queryParams?: Record<string, string | number | boolean | readonly string[] | undefined>
+  ) {
+    return this.request<T>('PUT', endpoint, body, queryParams);
   }
 
-  delete<T>(endpoint: string, queryParams?: Record<string, string | number | boolean | undefined>) {
+  delete<T>(endpoint: string, queryParams?: Record<string, string | number | boolean | readonly string[] | undefined>) {
     return this.request<T>('DELETE', endpoint, undefined, queryParams);
   }
 }

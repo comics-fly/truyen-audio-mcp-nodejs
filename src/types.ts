@@ -21,10 +21,12 @@ export interface ApiResponse<T> {
 }
 
 export interface PaginationMeta {
-  readonly current_page: number;
-  readonly last_page: number;
+  readonly current_page?: number;
+  readonly page?: number;
+  readonly last_page?: number;
   readonly per_page: number;
   readonly total: number;
+  readonly has_more?: boolean;
 }
 
 export interface TextStats {
@@ -33,23 +35,34 @@ export interface TextStats {
   readonly sentences: number;
 }
 
+export type TextMode = 'full' | 'minimal' | 'none';
+export type FieldsParam = string | readonly string[];
+
 // -------------------------------------------------------------
 // Story Types
 // -------------------------------------------------------------
-export type StoryStatus = 'draft' | 'published' | 'archived';
+export type StoryStatus = 'draft' | 'ongoing' | 'completed' | 'paused' | 'scheduled';
+
+export interface StoryCategoryItem {
+  readonly id: number;
+  readonly name: string;
+  readonly slug: string;
+}
 
 export interface StorySummary {
   readonly id: number;
   readonly title: string;
   readonly slug: string;
   readonly status: StoryStatus;
+  readonly scheduled_publish_at?: string | null;
   readonly author: string;
-  readonly categories: readonly string[];
+  readonly categories: readonly (string | StoryCategoryItem)[];
   readonly chapters_count: number;
   readonly updated_at: string | null;
 }
 
-export interface StoryDetail extends StorySummary {
+export interface StoryDetail extends Omit<StorySummary, 'categories'> {
+  readonly categories: readonly StoryCategoryItem[];
   readonly short_description: string | null;
   readonly short_description_stats?: TextStats;
   readonly summary: string | null;
@@ -59,48 +72,8 @@ export interface StoryDetail extends StorySummary {
     readonly ranking: number;
     readonly seo_keywords: string | null;
     readonly seo_description: string | null;
+    readonly scheduled_publish_at?: string | null;
   };
-}
-
-export interface GetStoryDetailParams {
-  readonly include_text?: boolean;
-  readonly include_summary?: boolean;
-  readonly include_short_description?: boolean;
-}
-
-export interface StorySummaryResponse {
-  readonly id: number;
-  readonly title: string;
-  readonly summary: string | null;
-  readonly stats: TextStats;
-}
-
-export interface StoryShortDescriptionResponse {
-  readonly id: number;
-  readonly title: string;
-  readonly short_description: string | null;
-  readonly stats: TextStats;
-}
-
-export interface StoryCategoryItem {
-  readonly id: number;
-  readonly name: string;
-  readonly slug: string;
-}
-
-export interface StoryCategoriesResponse {
-  readonly story_id: number;
-  readonly story_title: string;
-  readonly categories: readonly StoryCategoryItem[];
-}
-
-export interface AttachStoryCategoriesPayload {
-  readonly category_ids?: readonly number[];
-  readonly category_id?: number;
-}
-
-export interface SyncStoryCategoriesPayload {
-  readonly category_ids: readonly number[];
 }
 
 export interface IndexStoryParams {
@@ -109,30 +82,47 @@ export interface IndexStoryParams {
   readonly category_id?: number;
   readonly per_page?: number;
   readonly page?: number;
+  readonly fields?: FieldsParam;
+}
+
+export interface GetStoryDetailParams {
+  readonly fields?: FieldsParam;
+  readonly summary?: TextMode;
+  readonly short_description?: TextMode;
+  readonly include_text?: boolean;
 }
 
 export interface StoreStoryPayload {
   readonly title: string;
+  readonly slug?: string | null;
+  readonly status?: StoryStatus;
+  readonly scheduled_publish_at?: string | null;
+  readonly summary?: string | null;
+  readonly short_description?: string | null;
+  readonly seo_keywords?: string | null;
+  readonly seo_description?: string | null;
+  readonly category_ids?: readonly number[];
+  readonly category_id?: number;
   readonly user_id?: number;
+  readonly fields?: FieldsParam;
 }
 
 export interface UpdateStoryPayload {
   readonly title?: string;
   readonly slug?: string;
   readonly status?: StoryStatus;
-  readonly short_description?: string;
+  readonly scheduled_publish_at?: string | null;
   readonly summary?: string;
+  readonly short_description?: string;
   readonly seo_keywords?: string;
   readonly seo_description?: string;
   readonly category_ids?: readonly number[];
-}
-
-export interface UpdateStorySummaryPayload {
-  readonly summary: string;
-}
-
-export interface UpdateStoryShortDescriptionPayload {
-  readonly short_description: string;
+  readonly category_id?: number;
+  readonly add_category_ids?: readonly number[];
+  readonly add_category_id?: number;
+  readonly remove_category_ids?: readonly number[];
+  readonly remove_category_id?: number;
+  readonly fields?: FieldsParam;
 }
 
 // -------------------------------------------------------------
@@ -147,6 +137,7 @@ export interface ChapterSummaryItem {
   readonly title: string;
   readonly status: ChapterStatus;
   readonly summary: string | null;
+  readonly summary_stats?: TextStats;
 }
 
 export interface ChapterItem extends ChapterSummaryItem {
@@ -160,7 +151,6 @@ export interface ChapterItem extends ChapterSummaryItem {
 export interface ChapterDetail extends ChapterItem {
   readonly content: string | null;
   readonly content_stats?: TextStats;
-  readonly summary_stats?: TextStats;
   readonly meta: {
     readonly is_locked: boolean;
     readonly unlock_price: number;
@@ -168,17 +158,19 @@ export interface ChapterDetail extends ChapterItem {
   };
 }
 
-export interface GetChapterDetailParams {
-  readonly include_text?: boolean;
-  readonly include_summary?: boolean;
-  readonly include_content?: boolean;
-}
-
 export interface IndexChapterParams {
   readonly status?: ChapterStatus;
   readonly direction?: 'asc' | 'desc';
   readonly per_page?: number;
   readonly page?: number;
+  readonly fields?: FieldsParam;
+}
+
+export interface GetChapterDetailParams {
+  readonly fields?: FieldsParam;
+  readonly content?: TextMode;
+  readonly summary?: TextMode;
+  readonly include_text?: boolean;
 }
 
 export interface StoreChapterPayload {
@@ -186,11 +178,12 @@ export interface StoreChapterPayload {
   readonly title?: string | null;
   readonly slug?: string | null;
   readonly status?: ChapterStatus | null;
+  readonly scheduled_publish_at?: string | null;
   readonly content?: string | null;
   readonly summary?: string | null;
   readonly is_locked?: boolean;
   readonly unlock_price?: number;
-  readonly scheduled_publish_at?: string | null;
+  readonly fields?: FieldsParam;
 }
 
 export interface UpdateChapterPayload {
@@ -198,67 +191,26 @@ export interface UpdateChapterPayload {
   readonly title?: string | null;
   readonly slug?: string | null;
   readonly status?: ChapterStatus | null;
+  readonly scheduled_publish_at?: string | null;
   readonly summary?: string | null;
   readonly content?: string | null;
   readonly is_locked?: boolean;
   readonly unlock_price?: number;
-  readonly scheduled_publish_at?: string | null;
-}
-
-export interface UpdateChapterSchedulePayload {
-  readonly scheduled_publish_at: string;
-}
-
-export interface ChapterScheduleResponse {
-  readonly id: number;
-  readonly story_id: number;
-  readonly chapter_number: number;
-  readonly title: string;
-  readonly slug: string;
-  readonly status: ChapterStatus;
-  readonly scheduled_publish_at: string | null;
-  readonly meta: {
-    readonly is_locked: boolean;
-    readonly unlock_price: number;
-    readonly scheduled_publish_at: string | null;
-  };
-  readonly updated_at: string | null;
-}
-
-export interface ChapterSummaryResponse {
-  readonly id: number;
-  readonly story_id: number;
-  readonly chapter_number: number;
-  readonly title: string;
-  readonly summary: string | null;
-  readonly stats: TextStats;
-}
-
-export interface ChapterContentResponse {
-  readonly id: number;
-  readonly story_id: number;
-  readonly chapter_number: number;
-  readonly title: string;
-  readonly content: string | null;
-  readonly stats: TextStats;
-}
-
-export interface UpdateChapterSummaryPayload {
-  readonly summary: string;
-}
-
-export interface UpdateChapterContentPayload {
-  readonly content: string;
+  readonly fields?: FieldsParam;
 }
 
 export interface BatchSummaryPayload {
+  readonly story_id?: number;
   readonly chapter_ids?: readonly number[];
   readonly chapter_numbers?: readonly number[];
+  readonly fields?: FieldsParam;
 }
 
 export interface ContextWindowParams {
   readonly before?: number;
   readonly after?: number;
+  readonly context?: TextMode;
+  readonly fields?: FieldsParam;
 }
 
 export interface ContextWindowResult {
@@ -296,6 +248,7 @@ export interface IndexCategoryParams {
   readonly search?: string;
   readonly per_page?: number;
   readonly page?: number;
+  readonly fields?: FieldsParam;
 }
 
 export interface StoreCategoryPayload {
@@ -304,6 +257,7 @@ export interface StoreCategoryPayload {
   readonly seo_keywords?: string | null;
   readonly seo_description?: string | null;
   readonly note?: string | null;
+  readonly fields?: FieldsParam;
 }
 
 export interface UpdateCategoryPayload {
@@ -312,4 +266,64 @@ export interface UpdateCategoryPayload {
   readonly seo_keywords?: string | null;
   readonly seo_description?: string | null;
   readonly note?: string | null;
+  readonly fields?: FieldsParam;
+}
+
+// -------------------------------------------------------------
+// Comment Types
+// -------------------------------------------------------------
+export interface CommentItem {
+  readonly id: number;
+  readonly story_id: number;
+  readonly user_id: number;
+  readonly user_name: string;
+  readonly parent_id: number | null;
+  readonly content: string;
+  readonly replies_count: number;
+  readonly created_at: string | null;
+  readonly updated_at: string | null;
+}
+
+export interface CommentDetail {
+  readonly id: number;
+  readonly story_id: number;
+  readonly story_title?: string | null;
+  readonly user: {
+    readonly id: number;
+    readonly name: string;
+  };
+  readonly parent_id: number | null;
+  readonly content: string;
+  readonly replies_count: number;
+  readonly replies?: readonly CommentItem[];
+  readonly created_at: string | null;
+  readonly updated_at: string | null;
+}
+
+export interface IndexCommentParams {
+  readonly story_id?: number;
+  readonly user_id?: number;
+  readonly parent_id?: number;
+  readonly search?: string;
+  readonly direction?: 'asc' | 'desc';
+  readonly page?: number;
+  readonly per_page?: number;
+  readonly fields?: FieldsParam;
+}
+
+export interface StoreCommentPayload {
+  readonly story_id?: number;
+  readonly parent_id?: number | null;
+  readonly content: string;
+  readonly fields?: FieldsParam;
+}
+
+export interface UpdateCommentPayload {
+  readonly content: string;
+  readonly fields?: FieldsParam;
+}
+
+export interface DeleteCommentResult {
+  readonly id: number;
+  readonly deleted: boolean;
 }

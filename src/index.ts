@@ -1,12 +1,20 @@
 /**
  * Điểm khởi chạy chính của Truyen Audio MCP Server
  */
+import net from 'node:net';
+
+// Tắt autoSelectFamily để tránh lỗi timeout/network unreachable trên môi trường IPv6 không định tuyến được
+if (typeof net.setDefaultAutoSelectFamily === 'function') {
+  net.setDefaultAutoSelectFamily(false);
+}
+
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { apiClient } from './client.js';
 import { config } from './config.js';
 import { registerCategoryTools } from './tools/category.tools.js';
 import { registerChapterTools } from './tools/chapter.tools.js';
+import { registerCommentTools } from './tools/comment.tools.js';
 import { registerStoryTools } from './tools/story.tools.js';
 
 // Khởi tạo máy chủ MCP
@@ -32,6 +40,7 @@ server.tool(
 registerStoryTools(server);
 registerChapterTools(server);
 registerCategoryTools(server);
+registerCommentTools(server);
 
 // ponytail: stdio transport là chuẩn kết nối MCP cho AI agent cục bộ, nâng cấp SSE khi cần deploy remote
 async function main(): Promise<void> {

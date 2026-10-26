@@ -8,6 +8,7 @@ import { McpApiClient } from '../src/client.js';
 import { config } from '../src/config.js';
 import { registerCategoryTools } from '../src/tools/category.tools.js';
 import { registerChapterTools } from '../src/tools/chapter.tools.js';
+import { registerCommentTools } from '../src/tools/comment.tools.js';
 import { registerStoryTools } from '../src/tools/story.tools.js';
 
 test('Cấu hình mặc định của MCP Server', () => {
@@ -16,16 +17,21 @@ test('Cấu hình mặc định của MCP Server', () => {
   assert.ok(config.apiUrl.length > 0);
 });
 
-test('McpApiClient xử lý URL và format lỗi kết nối chuẩn xác', async () => {
+test('McpApiClient xử lý URL, array params và format lỗi kết nối chuẩn xác', async () => {
   const client = new McpApiClient('http://test-server.local:8000/mcp/', 'fake-token');
-  const res = await client.get('stories', { search: 'Tiên hiệp', page: 2 });
+  const res = await client.get('stories', {
+    search: 'Tiên hiệp',
+    page: 2,
+    fields: ['id', 'title'],
+  });
 
   assert.equal(res.status, 'error');
   assert.equal(res.error_code, 'CLIENT_NETWORK_ERROR');
   assert.match(res.message || '', /Ti%C3%AAn\+hi%E1%BB%87p/);
+  assert.match(res.message || '', /fields=id%2Ctitle/);
 });
 
-test('Đăng ký đầy đủ toàn bộ các MCP Tools cần thiết', () => {
+test('Đăng ký đầy đủ toàn bộ 19 domain tools của hệ thống MCP', () => {
   const server = new McpServer({
     name: 'test-server',
     version: '1.0.0',
@@ -34,48 +40,45 @@ test('Đăng ký đầy đủ toàn bộ các MCP Tools cần thiết', () => {
   registerStoryTools(server);
   registerChapterTools(server);
   registerCategoryTools(server);
+  registerCommentTools(server);
 
   // Đảm bảo không ném ngoại lệ khi đăng ký các công cụ
   assert.ok(server);
 
-  // Kiểm tra 27 công cụ đã được đăng ký
+  // Kiểm tra 19 công cụ đã được đăng ký
   const registeredToolNames = Object.keys(
     (server as unknown as { _registeredTools: Record<string, unknown> })._registeredTools || {}
   );
   const expectedTools = [
+    // Story (4 tools)
     'story_list',
     'story_get',
-    'story_get_summary',
-    'story_get_short_description',
     'story_create',
     'story_update',
-    'story_update_summary',
-    'story_update_short_description',
-    'story_get_categories',
-    'story_attach_categories',
-    'story_sync_categories',
-    'story_detach_category',
+    // Chapter (6 tools)
     'chapter_list_by_story',
     'chapter_create',
     'chapter_batch_summaries',
     'chapter_get',
     'chapter_update',
-    'chapter_schedule',
-    'chapter_get_summary',
-    'chapter_get_content',
-    'chapter_update_summary',
-    'chapter_update_content',
     'chapter_context_summary',
+    // Category (4 tools)
     'category_list',
     'category_get',
     'category_create',
     'category_update',
+    // Comment (5 tools)
+    'comment_list',
+    'comment_get',
+    'comment_create',
+    'comment_update',
+    'comment_delete',
   ];
 
   for (const name of expectedTools) {
     assert.ok(registeredToolNames.includes(name), `Thiếu tool: ${name}`);
   }
-  assert.equal(registeredToolNames.length, 27);
+  assert.equal(registeredToolNames.length, 19);
 });
 
 test('Validation schema của các tools phản ánh đúng rule của Laravel backend', () => {
@@ -87,114 +90,168 @@ test('Validation schema của các tools phản ánh đúng rule của Laravel b
   registerStoryTools(server);
   registerChapterTools(server);
   registerCategoryTools(server);
+  registerCommentTools(server);
 
-  const tools = (server as unknown as { _registeredTools: Record<string, { inputSchema: { safeParse: (val: unknown) => { success: boolean } } }> })._registeredTools;
+  const tools = (
+    server as unknown as {
+      _registeredTools: Record<
+        string,
+        { inputSchema: { safeParse: (val: unknown) => { success: boolean } } }
+      >;
+    }
+  )._registeredTools;
 
   // 1. story_list & story_get
   const storyListSchema = tools.story_list.inputSchema;
-  assert.equal(storyListSchema.safeParse({ search: 'truyện hay', per_page: 20, category_id: 1 }).success, true);
+  assert.equal(
+    storyListSchema.safeParse({ search: 'truyện hay', per_page: 20, category_id: 1, status: 'ongoing', fields: 'id,title' }).success,
+    true
+  );
   assert.equal(storyListSchema.safeParse({ per_page: 100 }).success, false, 'per_page max là 50');
   assert.equal(storyListSchema.safeParse({ search: 'a'.repeat(101) }).success, false, 'search max 100');
 
   const storyGetSchema = tools.story_get.inputSchema;
-  assert.equal(storyGetSchema.safeParse({ id: 1, include_text: true, include_summary: true }).success, true);
+  assert.equal(
+    storyGetSchema.safeParse({ id: 1, summary: 'full', short_description: 'minimal', fields: ['id', 'title'] }).success,
+    true
+  );
+  assert.equal(storyGetSchema.safeParse({ id: 0 }).success, false, 'id phải dương');
 
-  // 2. story_get_summary & story_get_short_description
-  assert.equal(tools.story_get_summary.inputSchema.safeParse({ id: 1 }).success, true);
-  assert.equal(tools.story_get_summary.inputSchema.safeParse({ id: 0 }).success, false);
-  assert.equal(tools.story_get_short_description.inputSchema.safeParse({ id: 2 }).success, true);
-
-  // 3. story_create & update
+  // 2. story_create & story_update
   const storyCreateSchema = tools.story_create.inputSchema;
-  assert.equal(storyCreateSchema.safeParse({ title: 'Truyện mới', user_id: 2 }).success, true);
+  assert.equal(
+    storyCreateSchema.safeParse({
+      title: 'Truyện mới',
+      status: 'scheduled',
+      scheduled_publish_at: '2026-11-01T08:00:00Z',
+      category_ids: [1, 2],
+      user_id: 2,
+    }).success,
+    true
+  );
   assert.equal(storyCreateSchema.safeParse({ title: '' }).success, false, 'title không được rỗng');
 
   const storyUpdateSchema = tools.story_update.inputSchema;
-  assert.equal(storyUpdateSchema.safeParse({
-    id: 1,
-    title: 'Tiêu đề cập nhật',
-    slug: 'tieu-de-cap-nhat',
-    status: 'published',
-    summary: 'Tóm tắt nội dung',
-    short_description: 'Mô tả ngắn',
-    seo_keywords: 'tien hiep, truyen audio',
-    seo_description: 'Mo ta SEO truyen audio',
-    category_ids: [1, 2, 3],
-  }).success, true);
+  assert.equal(
+    storyUpdateSchema.safeParse({
+      id: 1,
+      title: 'Tiêu đề cập nhật',
+      slug: 'tieu-de-cap-nhat',
+      status: 'ongoing',
+      scheduled_publish_at: '2026-11-01T08:00:00Z',
+      summary: 'Tóm tắt nội dung',
+      short_description: 'Mô tả ngắn',
+      seo_keywords: 'tien hiep, truyen audio',
+      seo_description: 'Mo ta SEO truyen audio',
+      category_ids: [1, 2, 3],
+      add_category_ids: [4],
+      remove_category_ids: [1],
+      fields: 'id,title,status',
+    }).success,
+    true
+  );
   assert.equal(storyUpdateSchema.safeParse({ id: 1, title: '' }).success, false, 'title không được rỗng');
-  assert.equal(storyUpdateSchema.safeParse({ id: 1, slug: '' }).success, false, 'slug không được rỗng');
   assert.equal(storyUpdateSchema.safeParse({ id: 1, category_ids: Array.from({ length: 51 }, (_, i) => i + 1) }).success, false, 'max 50 category_ids');
-  assert.equal(storyUpdateSchema.safeParse({ id: 1, category_ids: [-1] }).success, false, 'category_id phải dương');
 
-  const storySummarySchema = tools.story_update_summary.inputSchema;
-  assert.equal(storySummarySchema.safeParse({ id: 1, summary: 'Tóm tắt mới' }).success, true);
-  assert.equal(storySummarySchema.safeParse({ id: 1, summary: '' }).success, false);
-
-  const storyShortDescSchema = tools.story_update_short_description.inputSchema;
-  assert.equal(storyShortDescSchema.safeParse({ id: 1, short_description: 'Mô tả ngắn' }).success, true);
-  assert.equal(storyShortDescSchema.safeParse({ id: 1, short_description: '' }).success, false);
-
-  // 4. story categories management: get, attach, sync, detach
-  const storyGetCatsSchema = tools.story_get_categories.inputSchema;
-  assert.equal(storyGetCatsSchema.safeParse({ id: 10 }).success, true);
-  assert.equal(storyGetCatsSchema.safeParse({ id: -1 }).success, false);
-
-  const storyAttachCatsSchema = tools.story_attach_categories.inputSchema;
-  assert.equal(storyAttachCatsSchema.safeParse({ id: 10, category_ids: [1, 2, 3] }).success, true);
-  assert.equal(storyAttachCatsSchema.safeParse({ id: 10, category_id: 5 }).success, true);
-  assert.equal(storyAttachCatsSchema.safeParse({ id: 10, category_ids: Array.from({ length: 51 }, (_, i) => i + 1) }).success, false, 'max 50 thể loại');
-
-  const storySyncCatsSchema = tools.story_sync_categories.inputSchema;
-  assert.equal(storySyncCatsSchema.safeParse({ id: 10, category_ids: [1, 2] }).success, true);
-  assert.equal(storySyncCatsSchema.safeParse({ id: 10, category_ids: [] }).success, true, 'cho phép mảng rỗng để gỡ hết thể loại');
-  assert.equal(storySyncCatsSchema.safeParse({ id: 10 }).success, false, 'category_ids bắt buộc');
-
-  const storyDetachCatSchema = tools.story_detach_category.inputSchema;
-  assert.equal(storyDetachCatSchema.safeParse({ id: 10, category_id: 3 }).success, true);
-  assert.equal(storyDetachCatSchema.safeParse({ id: 10, category_id: 0 }).success, false);
-
-  // 5. chapter_list_by_story
+  // 3. chapter_list_by_story & chapter_create
   const chapterListSchema = tools.chapter_list_by_story.inputSchema;
-  assert.equal(chapterListSchema.safeParse({ story_id: 1, status: 'scheduled', direction: 'desc', per_page: 50 }).success, true);
+  assert.equal(
+    chapterListSchema.safeParse({ story_id: 1, status: 'scheduled', direction: 'desc', per_page: 50, fields: ['id', 'title'] }).success,
+    true
+  );
   assert.equal(chapterListSchema.safeParse({ story_id: 1, per_page: 51 }).success, false, 'per_page max 50');
 
-  // 6. chapter_create & update
   const chapterCreateSchema = tools.chapter_create.inputSchema;
-  assert.equal(chapterCreateSchema.safeParse({
-    story_id: 1,
-    chapter_number: 10,
-    title: 'Chương 10',
-    slug: 'chuong-10',
-    status: 'scheduled',
-    scheduled_publish_at: '2026-10-10T08:00:00Z',
-    content: 'Nội dung',
-    summary: 'Tóm tắt',
-    is_locked: true,
-    unlock_price: 50,
-  }).success, true);
+  assert.equal(
+    chapterCreateSchema.safeParse({
+      story_id: 1,
+      chapter_number: 10,
+      title: 'Chương 10',
+      slug: 'chuong-10',
+      status: 'scheduled',
+      scheduled_publish_at: '2026-10-30T08:00:00Z',
+      content: 'Nội dung',
+      summary: 'Tóm tắt',
+      is_locked: true,
+      unlock_price: 50,
+      fields: 'id,title',
+    }).success,
+    true
+  );
   assert.equal(chapterCreateSchema.safeParse({ story_id: 1, unlock_price: -5 }).success, false, 'unlock_price >= 0');
 
-  // 7. chapter_schedule
-  const chapterScheduleSchema = tools.chapter_schedule.inputSchema;
-  assert.equal(chapterScheduleSchema.safeParse({ id: 1, scheduled_publish_at: '2026-10-15T00:00:00Z' }).success, true);
-  assert.equal(chapterScheduleSchema.safeParse({ id: 1, scheduled_publish_at: '' }).success, false);
+  // 4. chapter_batch_summaries
+  const chapterBatchSchema = tools.chapter_batch_summaries.inputSchema;
+  assert.equal(
+    chapterBatchSchema.safeParse({ story_id: 1, chapter_numbers: [1, 2, 3], fields: ['id', 'summary'] }).success,
+    true
+  );
+  assert.equal(
+    chapterBatchSchema.safeParse({ chapter_ids: [10, 20] }).success,
+    true
+  );
+  assert.equal(
+    chapterBatchSchema.safeParse({ chapter_ids: Array.from({ length: 21 }, (_, i) => i + 1) }).success,
+    false,
+    'max 20 chapters'
+  );
 
-  // 8. chapter_get_summary & chapter_get_content
-  assert.equal(tools.chapter_get_summary.inputSchema.safeParse({ id: 5 }).success, true);
-  assert.equal(tools.chapter_get_content.inputSchema.safeParse({ id: 5 }).success, true);
+  // 5. chapter_get & chapter_update & chapter_context_summary
+  assert.equal(
+    tools.chapter_get.inputSchema.safeParse({ id: 5, content: 'full', summary: 'minimal', fields: 'id,content' }).success,
+    true
+  );
+  assert.equal(
+    tools.chapter_update.inputSchema.safeParse({ id: 1, chapter_number: 5, status: 'scheduled', unlock_price: 10 }).success,
+    true
+  );
+  assert.equal(
+    tools.chapter_context_summary.inputSchema.safeParse({ id: 10, before: 3, after: 3, context: 'full' }).success,
+    true
+  );
 
-  // 9. chapter_update
-  const chapterUpdateSchema = tools.chapter_update.inputSchema;
-  assert.equal(chapterUpdateSchema.safeParse({ id: 1, chapter_number: 5, status: 'scheduled', unlock_price: 10 }).success, true);
-
-  // 10. category_create & update
+  // 6. category_create & update
   const categoryCreateSchema = tools.category_create.inputSchema;
-  assert.equal(categoryCreateSchema.safeParse({
-    name: 'Tiên Hiệp',
-    slug: 'tien-hiep',
-    seo_keywords: 'tien hiep',
-    seo_description: 'Mo ta',
-    note: 'Ghi chu',
-  }).success, true);
+  assert.equal(
+    categoryCreateSchema.safeParse({
+      name: 'Tiên Hiệp',
+      slug: 'tien-hiep',
+      seo_keywords: 'tien hiep',
+      seo_description: 'Mo ta',
+      note: 'Ghi chu',
+    }).success,
+    true
+  );
   assert.equal(categoryCreateSchema.safeParse({ name: '' }).success, false, 'name không được rỗng');
+
+  // 7. comments (list, get, create, update, delete)
+  const commentListSchema = tools.comment_list.inputSchema;
+  assert.equal(
+    commentListSchema.safeParse({ story_id: 1, parent_id: 0, search: 'truyen hay', per_page: 20, direction: 'desc' }).success,
+    true
+  );
+  assert.equal(commentListSchema.safeParse({ per_page: 51 }).success, false, 'per_page max 50');
+  assert.equal(commentListSchema.safeParse({ parent_id: -1 }).success, false, 'parent_id không âm');
+
+  const commentGetSchema = tools.comment_get.inputSchema;
+  assert.equal(commentGetSchema.safeParse({ id: 5, fields: ['id', 'content', 'user'] }).success, true);
+  assert.equal(commentGetSchema.safeParse({ id: -1 }).success, false);
+
+  const commentCreateSchema = tools.comment_create.inputSchema;
+  assert.equal(
+    commentCreateSchema.safeParse({ story_id: 1, content: 'Truyện đọc rất cuốn!', parent_id: 10 }).success,
+    true
+  );
+  assert.equal(commentCreateSchema.safeParse({ story_id: 1, content: 'a' }).success, false, 'content tối thiểu 2 ký tự');
+  assert.equal(commentCreateSchema.safeParse({ story_id: 1, content: '   ' }).success, false, 'content toàn khoảng trắng bị từ chối');
+  assert.equal(commentCreateSchema.safeParse({ story_id: 1, content: 'a'.repeat(2001) }).success, false, 'content tối đa 2000 ký tự');
+
+  const commentUpdateSchema = tools.comment_update.inputSchema;
+  assert.equal(commentUpdateSchema.safeParse({ id: 1, content: 'Cập nhật bình luận' }).success, true);
+  assert.equal(commentUpdateSchema.safeParse({ id: 1, content: '' }).success, false);
+  assert.equal(commentUpdateSchema.safeParse({ id: 1, content: '   ' }).success, false, 'content không được rỗng sau trim');
+
+  const commentDeleteSchema = tools.comment_delete.inputSchema;
+  assert.equal(commentDeleteSchema.safeParse({ id: 1 }).success, true);
+  assert.equal(commentDeleteSchema.safeParse({ id: 0 }).success, false);
 });
