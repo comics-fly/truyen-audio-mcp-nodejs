@@ -278,8 +278,11 @@ export interface CommentItem {
   readonly user_id: number;
   readonly user_name: string;
   readonly parent_id: number | null;
+  readonly depth?: number;
+  readonly can_reply?: boolean;
   readonly content: string;
   readonly replies_count: number;
+  readonly replies?: readonly CommentItem[];
   readonly created_at: string | null;
   readonly updated_at: string | null;
 }
@@ -293,6 +296,8 @@ export interface CommentDetail {
     readonly name: string;
   };
   readonly parent_id: number | null;
+  readonly depth?: number;
+  readonly can_reply?: boolean;
   readonly content: string;
   readonly replies_count: number;
   readonly replies?: readonly CommentItem[];
@@ -314,6 +319,7 @@ export interface IndexCommentParams {
 export interface StoreCommentPayload {
   readonly story_id?: number;
   readonly parent_id?: number | null;
+  readonly user_id?: number;
   readonly content: string;
   readonly fields?: FieldsParam;
 }
@@ -325,5 +331,214 @@ export interface UpdateCommentPayload {
 
 export interface DeleteCommentResult {
   readonly id: number;
+  readonly deleted: boolean;
+}
+
+// -------------------------------------------------------------
+// Social Platform & Shared Types
+// -------------------------------------------------------------
+export type SocialPlatform =
+  | 'facebook'
+  | 'tiktok'
+  | 'threads'
+  | 'instagram'
+  | 'youtube'
+  | 'x'
+  | 'telegram';
+
+// -------------------------------------------------------------
+// Post Social Types (Trích đoạn Mạng Xã Hội)
+// -------------------------------------------------------------
+export type PostSocialStatus = 'draft' | 'posted';
+
+export interface PostSocialLinkItem {
+  readonly id: number;
+  readonly post_social_id: number;
+  readonly platform: SocialPlatform;
+  readonly platform_label?: string | null;
+  readonly url: string;
+  readonly user_id?: number | null;
+  readonly user_name?: string | null;
+  readonly created_at: string | null;
+  readonly updated_at: string | null;
+}
+
+export interface PostSocialItem {
+  readonly id: number;
+  readonly story_id: number;
+  readonly story?: {
+    readonly id: number;
+    readonly title: string;
+    readonly slug: string;
+  };
+  readonly chapter_id?: number | null;
+  readonly chapter?: {
+    readonly id: number;
+    readonly chapter_number: number;
+    readonly title: string;
+    readonly slug: string;
+  } | null;
+  readonly user_id?: number | null;
+  readonly user_name?: string | null;
+  readonly status: PostSocialStatus;
+  readonly status_label?: string | null;
+  readonly image_url?: string | null;
+  readonly links_count: number;
+  readonly content?: string | null;
+  readonly content_stats?: TextStats;
+  readonly created_at: string | null;
+  readonly updated_at: string | null;
+}
+
+export interface PostSocialDetail extends PostSocialItem {
+  readonly links?: readonly PostSocialLinkItem[];
+}
+
+export interface IndexPostSocialParams {
+  readonly story_id?: number;
+  readonly chapter_id?: number;
+  readonly status?: PostSocialStatus;
+  readonly platform?: SocialPlatform;
+  readonly search?: string;
+  readonly page?: number;
+  readonly per_page?: number;
+  readonly fields?: FieldsParam;
+  readonly content?: TextMode;
+}
+
+export interface StorePostSocialPayload {
+  readonly story_id?: number;
+  readonly chapter_id?: number | null;
+  readonly content: string;
+  readonly image?: string | null;
+  readonly status?: PostSocialStatus;
+  readonly user_id?: number;
+  readonly fields?: FieldsParam;
+}
+
+export interface UpdatePostSocialPayload {
+  readonly story_id?: number;
+  readonly chapter_id?: number | null;
+  readonly content?: string;
+  readonly image?: string | null;
+  readonly status?: PostSocialStatus;
+  readonly fields?: FieldsParam;
+}
+
+export interface StorePostSocialLinkPayload {
+  readonly platform: SocialPlatform;
+  readonly url: string;
+  readonly user_id?: number;
+  readonly fields?: FieldsParam;
+}
+
+export interface DeletePostSocialResult {
+  readonly id: number;
+  readonly deleted: boolean;
+}
+
+export interface DeletePostSocialLinkResult {
+  readonly id: number;
+  readonly post_social_id: number;
+  readonly deleted: boolean;
+}
+
+// -------------------------------------------------------------
+// Short Video Types (Kịch bản Video Ngắn)
+// -------------------------------------------------------------
+export type ShortVideoStatus = 'draft' | 'posted';
+
+export interface ShortVideoLinkItem {
+  readonly id: number;
+  readonly short_video_id: number;
+  readonly platform: SocialPlatform;
+  readonly platform_label?: string | null;
+  readonly url: string;
+  readonly user_id?: number | null;
+  readonly user_name?: string | null;
+  readonly created_at: string | null;
+  readonly updated_at: string | null;
+}
+
+export interface ShortVideoItem {
+  readonly id: number;
+  readonly story_id: number;
+  readonly story?: {
+    readonly id: number;
+    readonly title: string;
+    readonly slug: string;
+  };
+  readonly chapter_id?: number | null;
+  readonly chapter?: {
+    readonly id: number;
+    readonly chapter_number: number;
+    readonly title: string;
+    readonly slug: string;
+  } | null;
+  readonly user_id?: number | null;
+  readonly user_name?: string | null;
+  readonly status: ShortVideoStatus;
+  readonly status_label?: string | null;
+  readonly image_url?: string | null;
+  readonly video_url?: string | null;
+  readonly links_count: number;
+  readonly script?: string | null;
+  readonly script_stats?: TextStats;
+  readonly created_at: string | null;
+  readonly updated_at: string | null;
+}
+
+export interface ShortVideoDetail extends ShortVideoItem {
+  readonly links?: readonly ShortVideoLinkItem[];
+}
+
+export interface IndexShortVideoParams {
+  readonly story_id?: number;
+  readonly chapter_id?: number;
+  readonly status?: ShortVideoStatus;
+  readonly platform?: SocialPlatform;
+  readonly search?: string;
+  readonly page?: number;
+  readonly per_page?: number;
+  readonly fields?: FieldsParam;
+  readonly script?: TextMode;
+}
+
+export interface StoreShortVideoPayload {
+  readonly story_id?: number;
+  readonly chapter_id?: number | null;
+  readonly script: string;
+  readonly image?: string | null;
+  readonly video_url?: string | null;
+  readonly status?: ShortVideoStatus;
+  readonly user_id?: number;
+  readonly fields?: FieldsParam;
+}
+
+export interface UpdateShortVideoPayload {
+  readonly story_id?: number;
+  readonly chapter_id?: number | null;
+  readonly script?: string;
+  readonly image?: string | null;
+  readonly video_url?: string | null;
+  readonly status?: ShortVideoStatus;
+  readonly fields?: FieldsParam;
+}
+
+export interface StoreShortVideoLinkPayload {
+  readonly platform: SocialPlatform;
+  readonly url: string;
+  readonly user_id?: number;
+  readonly fields?: FieldsParam;
+}
+
+export interface DeleteShortVideoResult {
+  readonly id: number;
+  readonly deleted: boolean;
+}
+
+export interface DeleteShortVideoLinkResult {
+  readonly short_video_id: number;
+  readonly link_id: number;
   readonly deleted: boolean;
 }

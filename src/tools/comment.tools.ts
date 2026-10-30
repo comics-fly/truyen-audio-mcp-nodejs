@@ -53,11 +53,12 @@ export function registerCommentTools(server: McpServer): void {
   // 3. Đăng bình luận mới
   server.tool(
     'comment_create',
-    'Đăng bình luận mới cho truyện hoặc trả lời một bình luận khác (độ sâu tối đa 4 cấp, độ dài 2-2000 ký tự sau khi cắt khoảng trắng thừa).',
+    'Đăng bình luận mới cho truyện hoặc trả lời một bình luận khác (độ sâu tối đa 5 cấp, độ dài 2-2000 ký tự sau khi cắt khoảng trắng thừa).',
     {
       story_id: z.number().int().positive().describe('ID truyện cần bình luận'),
       content: z.string().trim().min(2).max(2000).describe('Nội dung bình luận (2-2000 ký tự)'),
-      parent_id: z.number().int().positive().optional().describe('ID bình luận cha nếu là câu trả lời (tối đa độ sâu 4 cấp)'),
+      parent_id: z.number().int().positive().nullable().optional().describe('ID bình luận cha nếu là câu trả lời (tối đa độ sâu 5 cấp)'),
+      user_id: z.number().int().positive().optional().describe('ID tài khoản người dùng đăng bình luận (chỉ Root/Admin được chỉ định)'),
       fields: z.union([z.string(), z.array(z.string())]).optional().describe('Lọc các trường trả về sau khi tạo'),
     },
     async ({ story_id, ...payload }) => {

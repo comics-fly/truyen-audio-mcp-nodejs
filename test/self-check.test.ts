@@ -9,6 +9,8 @@ import { config } from '../src/config.js';
 import { registerCategoryTools } from '../src/tools/category.tools.js';
 import { registerChapterTools } from '../src/tools/chapter.tools.js';
 import { registerCommentTools } from '../src/tools/comment.tools.js';
+import { registerPostSocialTools } from '../src/tools/post_social.tools.js';
+import { registerShortVideoTools } from '../src/tools/short_video.tools.js';
 import { registerStoryTools } from '../src/tools/story.tools.js';
 
 test('Cấu hình mặc định của MCP Server', () => {
@@ -31,21 +33,23 @@ test('McpApiClient xử lý URL, array params và format lỗi kết nối chu�
   assert.match(res.message || '', /fields=id%2Ctitle/);
 });
 
-test('Đăng ký đầy đủ toàn bộ 19 domain tools của hệ thống MCP', () => {
+test('Đăng ký đầy đủ toàn bộ 33 domain tools của hệ thống MCP', () => {
   const server = new McpServer({
     name: 'test-server',
-    version: '1.0.0',
+    version: '1.5.0',
   });
 
   registerStoryTools(server);
   registerChapterTools(server);
   registerCategoryTools(server);
   registerCommentTools(server);
+  registerPostSocialTools(server);
+  registerShortVideoTools(server);
 
   // Đảm bảo không ném ngoại lệ khi đăng ký các công cụ
   assert.ok(server);
 
-  // Kiểm tra 19 công cụ đã được đăng ký
+  // Kiểm tra 33 công cụ đã được đăng ký
   const registeredToolNames = Object.keys(
     (server as unknown as { _registeredTools: Record<string, unknown> })._registeredTools || {}
   );
@@ -73,24 +77,42 @@ test('Đăng ký đầy đủ toàn bộ 19 domain tools của hệ thống MCP'
     'comment_create',
     'comment_update',
     'comment_delete',
+    // Post Socials (7 tools)
+    'post_social_list',
+    'post_social_get',
+    'post_social_create',
+    'post_social_update',
+    'post_social_delete',
+    'post_social_add_link',
+    'post_social_delete_link',
+    // Short Videos (7 tools)
+    'short_video_list',
+    'short_video_get',
+    'short_video_create',
+    'short_video_update',
+    'short_video_delete',
+    'short_video_add_link',
+    'short_video_delete_link',
   ];
 
   for (const name of expectedTools) {
     assert.ok(registeredToolNames.includes(name), `Thiếu tool: ${name}`);
   }
-  assert.equal(registeredToolNames.length, 19);
+  assert.equal(registeredToolNames.length, 33);
 });
 
 test('Validation schema của các tools phản ánh đúng rule của Laravel backend', () => {
   const server = new McpServer({
     name: 'test-server',
-    version: '1.0.0',
+    version: '1.5.0',
   });
 
   registerStoryTools(server);
   registerChapterTools(server);
   registerCategoryTools(server);
   registerCommentTools(server);
+  registerPostSocialTools(server);
+  registerShortVideoTools(server);
 
   const tools = (
     server as unknown as {
@@ -239,7 +261,11 @@ test('Validation schema của các tools phản ánh đúng rule của Laravel b
 
   const commentCreateSchema = tools.comment_create.inputSchema;
   assert.equal(
-    commentCreateSchema.safeParse({ story_id: 1, content: 'Truyện đọc rất cuốn!', parent_id: 10 }).success,
+    commentCreateSchema.safeParse({ story_id: 1, content: 'Truyện đọc rất cuốn!', parent_id: 10, user_id: 2 }).success,
+    true
+  );
+  assert.equal(
+    commentCreateSchema.safeParse({ story_id: 1, content: 'Bình luận cấp 1', parent_id: null }).success,
     true
   );
   assert.equal(commentCreateSchema.safeParse({ story_id: 1, content: 'a' }).success, false, 'content tối thiểu 2 ký tự');
@@ -254,4 +280,83 @@ test('Validation schema của các tools phản ánh đúng rule của Laravel b
   const commentDeleteSchema = tools.comment_delete.inputSchema;
   assert.equal(commentDeleteSchema.safeParse({ id: 1 }).success, true);
   assert.equal(commentDeleteSchema.safeParse({ id: 0 }).success, false);
+
+  // 8. post_socials (list, get, create, update, delete, add_link, delete_link)
+  const postSocialListSchema = tools.post_social_list.inputSchema;
+  assert.equal(
+    postSocialListSchema.safeParse({ story_id: 1, status: 'posted', platform: 'tiktok', per_page: 50, content: 'minimal' }).success,
+    true
+  );
+  assert.equal(postSocialListSchema.safeParse({ per_page: 101 }).success, false, 'per_page max 100');
+
+  const postSocialCreateSchema = tools.post_social_create.inputSchema;
+  assert.equal(
+    postSocialCreateSchema.safeParse({
+      story_id: 1,
+      chapter_id: 5,
+      content: 'Trích đoạn cực gay cấn',
+      image: 'https://example.com/banner.jpg',
+      status: 'draft',
+      user_id: 1,
+    }).success,
+    true
+  );
+  assert.equal(postSocialCreateSchema.safeParse({ story_id: 1, content: '' }).success, false, 'content min 1');
+
+  const postSocialUpdateSchema = tools.post_social_update.inputSchema;
+  assert.equal(
+    postSocialUpdateSchema.safeParse({ id: 1, content: 'Nội dung trích đoạn mới', status: 'posted', chapter_id: null, image: null }).success,
+    true
+  );
+
+  const postSocialAddLinkSchema = tools.post_social_add_link.inputSchema;
+  assert.equal(
+    postSocialAddLinkSchema.safeParse({ id: 1, platform: 'facebook', url: 'https://facebook.com/post/123', user_id: 1 }).success,
+    true
+  );
+  assert.equal(postSocialAddLinkSchema.safeParse({ id: 1, platform: 'facebook', url: 'invalid-url' }).success, false, 'phải đúng định dạng URL');
+
+  assert.equal(tools.post_social_delete.inputSchema.safeParse({ id: 1 }).success, true);
+  assert.equal(tools.post_social_delete_link.inputSchema.safeParse({ id: 1, link_id: 2 }).success, true);
+
+  // 9. short_videos (list, get, create, update, delete, add_link, delete_link)
+  const shortVideoListSchema = tools.short_video_list.inputSchema;
+  assert.equal(
+    shortVideoListSchema.safeParse({ story_id: 1, status: 'draft', platform: 'youtube', script: 'full' }).success,
+    true
+  );
+
+  const shortVideoCreateSchema = tools.short_video_create.inputSchema;
+  assert.equal(
+    shortVideoCreateSchema.safeParse({
+      story_id: 1,
+      chapter_id: 3,
+      script: 'Kịch bản video ngắn hook 3s đầu...',
+      image: 'https://example.com/thumb.jpg',
+      video_url: 'https://cdn.example.com/video.mp4',
+      status: 'draft',
+    }).success,
+    true
+  );
+  assert.equal(shortVideoCreateSchema.safeParse({ story_id: 1, script: '' }).success, false, 'script min 1');
+
+  const shortVideoUpdateSchema = tools.short_video_update.inputSchema;
+  assert.equal(
+    shortVideoUpdateSchema.safeParse({ id: 1, script: 'Kịch bản mới', video_url: 'https://cdn.com/v.mp4' }).success,
+    true
+  );
+  assert.equal(
+    shortVideoUpdateSchema.safeParse({ id: 1, chapter_id: null, image: null, video_url: null }).success,
+    true
+  );
+
+  const shortVideoAddLinkSchema = tools.short_video_add_link.inputSchema;
+  assert.equal(
+    shortVideoAddLinkSchema.safeParse({ id: 1, platform: 'tiktok', url: 'https://tiktok.com/@user/video/1' }).success,
+    true
+  );
+  assert.equal(shortVideoAddLinkSchema.safeParse({ id: 1, platform: 'tiktok', url: 'not-url' }).success, false);
+
+  assert.equal(tools.short_video_delete.inputSchema.safeParse({ id: 1 }).success, true);
+  assert.equal(tools.short_video_delete_link.inputSchema.safeParse({ id: 1, link_id: 5 }).success, true);
 });

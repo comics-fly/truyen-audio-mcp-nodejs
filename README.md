@@ -6,7 +6,7 @@ Model Context Protocol (MCP) server xây dựng bằng **Node.js** & **TypeScrip
 
 ## Tính Năng & Danh Sách Tools
 
-Hệ thống cung cấp **20 MCP tools** chuẩn hóa, hỗ trợ tối ưu token cho AI Agent thông qua **Sparse Fieldsets (`fields`)** và các chế độ nạp text (`full`/`minimal`/`none`):
+Hệ thống cung cấp **34 MCP tools** (33 domain tools + 1 info tool) chuẩn hóa, hỗ trợ tối ưu token cho AI Agent thông qua **Sparse Fieldsets (`fields`)** và các chế độ nạp text (`full`/`minimal`/`none`):
 
 ### 1. Quản lý Truyện (Stories)
 - `story_list`: Tìm kiếm, lọc theo trạng thái (`draft`/`ongoing`/`completed`/`paused`/`scheduled`), thể loại và phân trang danh sách truyện (hỗ trợ `fields`).
@@ -30,12 +30,30 @@ Hệ thống cung cấp **20 MCP tools** chuẩn hóa, hỗ trợ tối ưu toke
 
 ### 4. Quản lý Bình Luận (Comments)
 - `comment_list`: Danh sách bình luận theo truyện hoặc toàn hệ thống (hỗ trợ lọc `story_id`, `user_id`, `parent_id`, tìm kiếm, phân trang, `fields`).
-- `comment_get`: Chi tiết bình luận kèm thông tin người đăng và danh sách câu trả lời.
-- `comment_create`: Đăng bình luận cho truyện hoặc trả lời bình luận khác (độ sâu tối đa 4 cấp, độ dài 2-2000 ký tự).
+- `comment_get`: Chi tiết bình luận kèm thông tin người đăng và danh sách câu trả lời (phân cấp tối đa 5 cấp).
+- `comment_create`: Đăng bình luận cho truyện hoặc trả lời bình luận khác (độ sâu tối đa 5 cấp, độ dài 2-2000 ký tự, hỗ trợ chỉ định `user_id`).
 - `comment_update`: Chỉnh sửa nội dung bình luận (chỉ tác giả có quyền).
 - `comment_delete`: Xóa bình luận khỏi hệ thống (kiểm duyệt).
 
-### 5. Hệ Thống & Kiểm Tra
+### 5. Quản lý Trích Đoạn Mạng Xã Hội (Post Socials)
+- `post_social_list`: Danh sách bài trích đoạn mạng xã hội (lọc theo `story_id`, `chapter_id`, `status: draft|posted`, `platform`, `fields`, `content: full|minimal|none`).
+- `post_social_get`: Chi tiết bài trích đoạn kèm danh sách link liên kết các nền tảng (Facebook, TikTok, Threads, Instagram, YouTube, X, Telegram).
+- `post_social_create`: Tạo trích đoạn mới cho truyện hoặc chương (nội dung 1-20.000 ký tự, ảnh bìa, trạng thái).
+- `post_social_update`: Cập nhật nội dung, ảnh bìa, trạng thái hoặc chuyển gắn chương/truyện.
+- `post_social_delete`: Xóa bài trích đoạn cùng toàn bộ liên kết liên quan.
+- `post_social_add_link`: Gắn liên kết mạng xã hội (Facebook, TikTok, Threads, Instagram, YouTube, X, Telegram) vào bài trích đoạn.
+- `post_social_delete_link`: Gỡ bỏ một liên kết mạng xã hội khỏi bài trích đoạn.
+
+### 6. Quản lý Kịch Bản Video Ngắn (Short Videos)
+- `short_video_list`: Danh sách kịch bản video ngắn (lọc theo `story_id`, `chapter_id`, `status: draft|posted`, `platform`, `fields`, `script: full|minimal|none`).
+- `short_video_get`: Chi tiết kịch bản video ngắn kèm danh sách link liên kết video trên các nền tảng.
+- `short_video_create`: Tạo kịch bản video ngắn mới (kịch bản 1-50.000 ký tự, ảnh thumbnail, `video_url`, trạng thái).
+- `short_video_update`: Cập nhật kịch bản, ảnh thumbnail, file video hoặc trạng thái.
+- `short_video_delete`: Xóa kịch bản video ngắn cùng các liên kết video liên quan.
+- `short_video_add_link`: Gắn link video đã xuất bản (TikTok, YouTube Shorts, Reels, Facebook, X, Telegram) vào kịch bản.
+- `short_video_delete_link`: Gỡ bỏ một liên kết video mạng xã hội khỏi kịch bản.
+
+### 7. Hệ Thống & Kiểm Tra
 - `mcp_info`: Kiểm tra trạng thái kết nối và phiên bản API backend Laravel.
 
 ---
@@ -142,10 +160,12 @@ Nếu bạn đang phát triển hoặc muốn chạy trực tiếp file bundle s
 │   ├── types.ts              # Định nghĩa Types & DTOs
 │   ├── client.ts             # HTTP Client gọi API Laravel (/mcp)
 │   └── tools/
-│       ├── story.tools.ts    # Các công cụ quản lý Truyện
-│       ├── chapter.tools.ts  # Các công cụ quản lý Chapter & Context Window
-│       ├── category.tools.ts # Các công cụ quản lý Thể loại
-│       └── comment.tools.ts  # Các công cụ quản lý Bình luận
+│       ├── story.tools.ts        # Các công cụ quản lý Truyện
+│       ├── chapter.tools.ts      # Các công cụ quản lý Chapter & Context Window
+│       ├── category.tools.ts     # Các công cụ quản lý Thể loại
+│       ├── comment.tools.ts      # Các công cụ quản lý Bình luận
+│       ├── post_social.tools.ts  # Các công cụ quản lý Trích đoạn Mạng Xã Hội
+│       └── short_video.tools.ts  # Các công cụ quản lý Kịch bản Video Ngắn
 ├── test/
 │   └── self-check.test.ts    # Unit test tự động
 ├── dist/                     # Thư mục mã nguồn sau khi build
