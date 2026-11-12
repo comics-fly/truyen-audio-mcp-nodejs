@@ -233,7 +233,6 @@ test('Validation schema của các tools phản ánh đúng rule của Laravel b
     is_locked: true,
     price_range: '10,100',
     views_between: '100,500',
-    likes_range: '5-50',
     updated_from: '2026-10-01',
     scheduled_to: '2026-12-01',
     sort_by: 'price',
