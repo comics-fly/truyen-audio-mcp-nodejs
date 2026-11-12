@@ -58,6 +58,8 @@ export interface StorySummary {
   readonly author: string;
   readonly categories: readonly (string | StoryCategoryItem)[];
   readonly chapters_count: number;
+  readonly views?: number;
+  readonly likes?: number;
   readonly updated_at: string | null;
 }
 
@@ -78,8 +80,45 @@ export interface StoryDetail extends Omit<StorySummary, 'categories'> {
 
 export interface IndexStoryParams {
   readonly search?: string;
-  readonly status?: StoryStatus;
   readonly category_id?: number;
+  readonly category_ids?: string | readonly number[];
+  readonly category_slug?: string;
+  readonly category_slugs?: string | readonly string[];
+  readonly category_mode?: 'any' | 'all';
+  readonly status?: StoryStatus;
+  readonly statuses?: string | readonly StoryStatus[];
+  readonly approval?: 'approved' | 'pending' | 'rejected' | 'all';
+  readonly is_featured?: boolean;
+  readonly user_id?: number;
+  readonly author_name?: string;
+  readonly only_mine?: boolean;
+  readonly has_audio?: boolean;
+  readonly has_video?: boolean;
+  readonly is_paid?: boolean;
+  readonly min_chapters?: number;
+  readonly max_chapters?: number;
+  readonly views?: number;
+  readonly min_views?: number;
+  readonly max_views?: number;
+  readonly views_from?: number;
+  readonly views_to?: number;
+  readonly from_views?: number;
+  readonly to_views?: number;
+  readonly views_range?: string;
+  readonly views_between?: string;
+  readonly likes?: number;
+  readonly min_likes?: number;
+  readonly max_likes?: number;
+  readonly likes_from?: number;
+  readonly likes_to?: number;
+  readonly from_likes?: number;
+  readonly to_likes?: number;
+  readonly likes_range?: string;
+  readonly likes_between?: string;
+  readonly updated_from?: string;
+  readonly updated_to?: string;
+  readonly sort_by?: 'updated_at' | 'created_at' | 'views' | 'likes' | 'chapters_count' | 'title' | 'id';
+  readonly sort_dir?: 'asc' | 'desc';
   readonly per_page?: number;
   readonly page?: number;
   readonly fields?: FieldsParam;
@@ -140,10 +179,19 @@ export interface ChapterSummaryItem {
   readonly summary_stats?: TextStats;
 }
 
+
 export interface ChapterItem extends ChapterSummaryItem {
   readonly slug: string;
   readonly is_locked: boolean;
   readonly unlock_price: number;
+  readonly has_audio?: boolean;
+  readonly audio_duration_seconds?: number;
+  readonly has_youtube?: boolean;
+  readonly has_summary?: boolean;
+  readonly views?: number;
+  readonly likes?: number;
+  readonly price?: number;
+  readonly is_free?: boolean;
   readonly scheduled_publish_at?: string | null;
   readonly updated_at: string | null;
 }
@@ -159,7 +207,56 @@ export interface ChapterDetail extends ChapterItem {
 }
 
 export interface IndexChapterParams {
+  readonly story_id?: number;
+  readonly search?: string;
+  readonly chapter_number?: number;
+  readonly chapter_numbers?: string | readonly number[];
+  readonly from_chapter?: number;
+  readonly to_chapter?: number;
+  readonly min_chapter?: number;
+  readonly max_chapter?: number;
   readonly status?: ChapterStatus;
+  readonly statuses?: string | readonly ChapterStatus[];
+  readonly has_audio?: boolean;
+  readonly has_video?: boolean;
+  readonly has_youtube?: boolean;
+  readonly has_summary?: boolean;
+  readonly has_content?: boolean;
+  readonly is_free?: boolean;
+  readonly is_locked?: boolean;
+  readonly price?: number;
+  readonly min_price?: number;
+  readonly max_price?: number;
+  readonly from_price?: number;
+  readonly to_price?: number;
+  readonly price_from?: number;
+  readonly price_to?: number;
+  readonly price_range?: string;
+  readonly price_between?: string;
+  readonly views?: number;
+  readonly min_views?: number;
+  readonly max_views?: number;
+  readonly from_views?: number;
+  readonly to_views?: number;
+  readonly views_from?: number;
+  readonly views_to?: number;
+  readonly views_range?: string;
+  readonly views_between?: string;
+  readonly likes?: number;
+  readonly min_likes?: number;
+  readonly max_likes?: number;
+  readonly from_likes?: number;
+  readonly to_likes?: number;
+  readonly likes_from?: number;
+  readonly likes_to?: number;
+  readonly likes_range?: string;
+  readonly likes_between?: string;
+  readonly updated_from?: string;
+  readonly updated_to?: string;
+  readonly scheduled_from?: string;
+  readonly scheduled_to?: string;
+  readonly sort_by?: 'chapter_number' | 'id' | 'created_at' | 'updated_at' | 'title' | 'views' | 'likes' | 'price';
+  readonly sort_dir?: 'asc' | 'desc';
   readonly direction?: 'asc' | 'desc';
   readonly per_page?: number;
   readonly page?: number;
@@ -277,6 +374,8 @@ export interface CommentItem {
   readonly story_id: number;
   readonly user_id: number;
   readonly user_name: string;
+  readonly chapter_id?: number | null;
+  readonly chapter_number?: number | null;
   readonly parent_id: number | null;
   readonly depth?: number;
   readonly can_reply?: boolean;
@@ -291,6 +390,12 @@ export interface CommentDetail {
   readonly id: number;
   readonly story_id: number;
   readonly story_title?: string | null;
+  readonly chapter_id?: number | null;
+  readonly chapter?: {
+    readonly id: number;
+    readonly title: string;
+    readonly chapter_number: number;
+  } | null;
   readonly user: {
     readonly id: number;
     readonly name: string;
@@ -307,6 +412,7 @@ export interface CommentDetail {
 
 export interface IndexCommentParams {
   readonly story_id?: number;
+  readonly chapter_id?: number;
   readonly user_id?: number;
   readonly parent_id?: number;
   readonly search?: string;
@@ -318,6 +424,7 @@ export interface IndexCommentParams {
 
 export interface StoreCommentPayload {
   readonly story_id?: number;
+  readonly chapter_id?: number | null;
   readonly parent_id?: number | null;
   readonly user_id?: number;
   readonly content: string;

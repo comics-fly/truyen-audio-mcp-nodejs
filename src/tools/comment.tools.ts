@@ -14,11 +14,12 @@ export function registerCommentTools(server: McpServer): void {
   // 1. Danh sách bình luận
   server.tool(
     'comment_list',
-    'Lấy danh sách bình luận (hỗ trợ lọc theo story_id, user_id, parent_id, tìm kiếm từ khóa, phân trang, lọc cột fields).',
+    'Lấy danh sách bình luận (hỗ trợ lọc theo story_id, chapter_id, user_id, parent_id, tìm kiếm từ khóa, phân trang, lọc cột fields).',
     {
       story_id: z.number().int().positive().optional().describe('Lọc bình luận theo ID truyện'),
+      chapter_id: z.number().int().min(0).optional().describe('Lọc theo ID chương; truyền 0 để lấy bình luận không gắn chương'),
       user_id: z.number().int().positive().optional().describe('Lọc bình luận theo ID người dùng'),
-      parent_id: z.number().int().min(0).optional().describe('Lọc bình luận theo ID cha (truyền 0 để lấy các bình luận gốc cấp 1)'),
+      parent_id: z.number().int().min(0).optional().describe('Lọc theo ID bình luận cha; truyền 0 để lấy bình luận gốc'),
       search: z.string().max(255).optional().describe('Từ khóa tìm kiếm nội dung bình luận'),
       direction: z.enum(['asc', 'desc']).optional().describe('Thứ tự sắp xếp (mặc định desc)'),
       page: z.number().int().positive().optional().describe('Số trang cần lấy'),
@@ -56,6 +57,7 @@ export function registerCommentTools(server: McpServer): void {
     'Đăng bình luận mới cho truyện hoặc trả lời một bình luận khác (độ sâu tối đa 5 cấp, độ dài 2-2000 ký tự sau khi cắt khoảng trắng thừa).',
     {
       story_id: z.number().int().positive().describe('ID truyện cần bình luận'),
+      chapter_id: z.number().int().positive().nullable().optional().describe('ID chương gắn bình luận (tùy chọn, phải thuộc truyện đã chọn)'),
       content: z.string().trim().min(2).max(2000).describe('Nội dung bình luận (2-2000 ký tự)'),
       parent_id: z.number().int().positive().nullable().optional().describe('ID bình luận cha nếu là câu trả lời (tối đa độ sâu 5 cấp)'),
       user_id: z.number().int().positive().optional().describe('ID tài khoản người dùng đăng bình luận (chỉ Root/Admin được chỉ định)'),

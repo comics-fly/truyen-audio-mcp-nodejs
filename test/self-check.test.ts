@@ -126,11 +126,50 @@ test('Validation schema của các tools phản ánh đúng rule của Laravel b
   // 1. story_list & story_get
   const storyListSchema = tools.story_list.inputSchema;
   assert.equal(
-    storyListSchema.safeParse({ search: 'truyện hay', per_page: 20, category_id: 1, status: 'ongoing', fields: 'id,title' }).success,
+    storyListSchema.safeParse({
+      search: 'truyện hay',
+      per_page: 100,
+      category_id: 1,
+      category_ids: '1,2,3',
+      category_slugs: ['tien-hiep', 'do-thi'],
+      category_mode: 'all',
+      status: 'ongoing',
+      statuses: ['ongoing', 'completed'],
+      approval: 'approved',
+      is_featured: true,
+      only_mine: false,
+      has_audio: true,
+      has_video: false,
+      is_paid: true,
+      min_chapters: 10,
+      max_chapters: 200,
+      views_range: '100,1000',
+      likes_between: '5-50',
+      updated_from: '2026-10-01',
+      updated_to: '2026-11-01',
+      sort_by: 'views',
+      sort_dir: 'desc',
+      fields: 'id,title,views,likes',
+    }).success,
     true
   );
-  assert.equal(storyListSchema.safeParse({ per_page: 100 }).success, false, 'per_page max là 50');
+  assert.equal(storyListSchema.safeParse({ per_page: 101 }).success, false, 'per_page max là 100');
+  assert.equal(storyListSchema.safeParse({ status: 'invalid' }).success, false, 'status phải thuộc enum');
   assert.equal(storyListSchema.safeParse({ search: 'a'.repeat(101) }).success, false, 'search max 100');
+  assert.equal(storyListSchema.safeParse({ sort_by: 'unknown' }).success, false, 'sort_by ngoài danh sách bị từ chối');
+  assert.equal(storyListSchema.safeParse({ category_ids: [1, -2] }).success, false, 'category ids phải dương');
+  assert.equal(storyListSchema.safeParse({ statuses: ['draft', 'invalid'] }).success, false, 'mọi statuses phải thuộc enum');
+  assert.equal(storyListSchema.safeParse({ approval: 'unknown' }).success, false, 'approval ngoài enum bị từ chối');
+  assert.equal(storyListSchema.safeParse({ min_views: -1 }).success, false, 'min_views không âm');
+  assert.equal(storyListSchema.safeParse({ is_featured: 'true' }).success, false, 'boolean phải đúng kiểu');
+  assert.equal(storyListSchema.safeParse({ category_mode: 'exact' }).success, false);
+
+  const parsedStoryFilters = storyListSchema.safeParse({ category_ids: [3, 7], statuses: ['ongoing', 'paused'] });
+  assert.equal(parsedStoryFilters.success, true);
+  if (parsedStoryFilters.success) {
+    assert.deepEqual(parsedStoryFilters.data.category_ids, [3, 7]);
+    assert.deepEqual(parsedStoryFilters.data.statuses, ['ongoing', 'paused']);
+  }
 
   const storyGetSchema = tools.story_get.inputSchema;
   assert.equal(
@@ -177,11 +216,44 @@ test('Validation schema của các tools phản ánh đúng rule của Laravel b
 
   // 3. chapter_list_by_story & chapter_create
   const chapterListSchema = tools.chapter_list_by_story.inputSchema;
-  assert.equal(
-    chapterListSchema.safeParse({ story_id: 1, status: 'scheduled', direction: 'desc', per_page: 50, fields: ['id', 'title'] }).success,
-    true
-  );
-  assert.equal(chapterListSchema.safeParse({ story_id: 1, per_page: 51 }).success, false, 'per_page max 50');
+  const chapterListFilters = {
+    story_id: 1,
+    search: 'chapter 10',
+    chapter_number: 10,
+    chapter_numbers: [10, 11],
+    from_chapter: 10,
+    to_chapter: 20,
+    status: 'scheduled',
+    statuses: 'draft,published',
+    has_audio: true,
+    has_video: false,
+    has_summary: true,
+    has_content: true,
+    is_free: false,
+    is_locked: true,
+    price_range: '10,100',
+    views_between: '100,500',
+    likes_range: '5-50',
+    updated_from: '2026-10-01',
+    scheduled_to: '2026-12-01',
+    sort_by: 'price',
+    direction: 'desc',
+    per_page: 100,
+    fields: ['id', 'title', 'price'],
+  };
+  assert.equal(chapterListSchema.safeParse(chapterListFilters).success, true);
+  assert.equal(chapterListSchema.safeParse({ story_id: 1, per_page: 101 }).success, false, 'per_page max 100');
+  assert.equal(chapterListSchema.safeParse({ story_id: 1, statuses: ['draft', 'invalid'] }).success, false, 'statuses phải hợp lệ');
+  assert.equal(chapterListSchema.safeParse({ story_id: 1, sort_by: 'unknown' }).success, false, 'sort_by phải thuộc enum');
+  assert.equal(chapterListSchema.safeParse({ story_id: 1, chapter_numbers: [0] }).success, false, 'chapter number phải >= 1');
+  assert.equal(chapterListSchema.safeParse({ story_id: 1, price: -1 }).success, false, 'price không âm');
+  assert.equal(chapterListSchema.safeParse({ story_id: 1, has_audio: 'yes' }).success, false, 'boolean phải đúng kiểu');
+  const parsedChapterFilters = chapterListSchema.safeParse({ story_id: 1, chapter_numbers: [2, 5], statuses: ['draft', 'published'] });
+  assert.equal(parsedChapterFilters.success, true);
+  if (parsedChapterFilters.success) {
+    assert.deepEqual(parsedChapterFilters.data.chapter_numbers, [2, 5]);
+    assert.deepEqual(parsedChapterFilters.data.statuses, ['draft', 'published']);
+  }
 
   const chapterCreateSchema = tools.chapter_create.inputSchema;
   assert.equal(
@@ -249,11 +321,32 @@ test('Validation schema của các tools phản ánh đúng rule của Laravel b
   // 7. comments (list, get, create, update, delete)
   const commentListSchema = tools.comment_list.inputSchema;
   assert.equal(
-    commentListSchema.safeParse({ story_id: 1, parent_id: 0, search: 'truyen hay', per_page: 20, direction: 'desc' }).success,
+    commentListSchema.safeParse({ story_id: 1, chapter_id: 12, parent_id: 0, search: 'truyen hay', per_page: 20, direction: 'desc' }).success,
     true
   );
   assert.equal(commentListSchema.safeParse({ per_page: 51 }).success, false, 'per_page max 50');
   assert.equal(commentListSchema.safeParse({ parent_id: -1 }).success, false, 'parent_id không âm');
+  assert.equal(commentListSchema.safeParse({ chapter_id: -1 }).success, false, 'chapter_id phải từ 0 trở lên');
+  assert.equal(commentListSchema.safeParse({ chapter_id: 0 }).success, true, 'chapter_id 0 lọc bình luận không gắn chương');
+  assert.equal(commentListSchema.safeParse({ chapter_id: '12' }).success, false, 'chapter_id phải là số');
+  const parsedCommentFilters = commentListSchema.safeParse({ story_id: 2, chapter_id: 12, user_id: 5, parent_id: 0 });
+  assert.equal(parsedCommentFilters.success, true);
+  if (parsedCommentFilters.success) {
+    assert.equal(parsedCommentFilters.data.chapter_id, 12);
+    assert.equal(parsedCommentFilters.data.parent_id, 0);
+  }
+  assert.equal(
+    tools.comment_create.inputSchema.safeParse({ story_id: 1, chapter_id: 12, content: 'Bình luận ở chương' }).success,
+    true
+  );
+  assert.equal(
+    tools.comment_create.inputSchema.safeParse({ story_id: 1, chapter_id: null, content: 'Bình luận chung' }).success,
+    true
+  );
+  assert.equal(
+    tools.comment_create.inputSchema.safeParse({ story_id: 1, chapter_id: -1, content: 'Sai chương' }).success,
+    false
+  );
 
   const commentGetSchema = tools.comment_get.inputSchema;
   assert.equal(commentGetSchema.safeParse({ id: 5, fields: ['id', 'content', 'user'] }).success, true);

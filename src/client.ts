@@ -36,7 +36,7 @@ export class McpApiClient {
     method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
     endpoint: string,
     body?: unknown,
-    queryParams?: Record<string, string | number | boolean | readonly string[] | undefined>
+    queryParams?: Record<string, string | number | boolean | readonly (string | number)[] | undefined>
   ): Promise<ApiResponse<T>> {
     let url = `${this.baseUrl}/${endpoint.replace(/^\/+/, '')}`;
 
@@ -86,14 +86,14 @@ export class McpApiClient {
   }
 
   // Tiện ích HTTP cơ bản
-  get<T>(endpoint: string, queryParams?: Record<string, string | number | boolean | readonly string[] | undefined>) {
+  get<T>(endpoint: string, queryParams?: Record<string, string | number | boolean | readonly (string | number)[] | undefined>) {
     return this.request<T>('GET', endpoint, undefined, queryParams);
   }
 
   post<T>(
     endpoint: string,
     body?: unknown,
-    queryParams?: Record<string, string | number | boolean | readonly string[] | undefined>
+    queryParams?: Record<string, string | number | boolean | readonly (string | number)[] | undefined>
   ) {
     return this.request<T>('POST', endpoint, body, queryParams);
   }
@@ -101,7 +101,7 @@ export class McpApiClient {
   patch<T>(
     endpoint: string,
     body?: unknown,
-    queryParams?: Record<string, string | number | boolean | readonly string[] | undefined>
+    queryParams?: Record<string, string | number | boolean | readonly (string | number)[] | undefined>
   ) {
     return this.request<T>('PATCH', endpoint, body, queryParams);
   }
@@ -109,12 +109,12 @@ export class McpApiClient {
   put<T>(
     endpoint: string,
     body?: unknown,
-    queryParams?: Record<string, string | number | boolean | readonly string[] | undefined>
+    queryParams?: Record<string, string | number | boolean | readonly (string | number)[] | undefined>
   ) {
     return this.request<T>('PUT', endpoint, body, queryParams);
   }
 
-  delete<T>(endpoint: string, queryParams?: Record<string, string | number | boolean | readonly string[] | undefined>) {
+  delete<T>(endpoint: string, queryParams?: Record<string, string | number | boolean | readonly (string | number)[] | undefined>) {
     return this.request<T>('DELETE', endpoint, undefined, queryParams);
   }
 }
