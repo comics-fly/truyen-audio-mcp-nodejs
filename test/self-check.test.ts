@@ -54,6 +54,12 @@ test('Đăng ký đầy đủ toàn bộ 33 domain tools của hệ thống MCP'
     (server as unknown as { _registeredTools: Record<string, unknown> })._registeredTools || {}
   );
   const expectedTools = [
+    // Post Social Images (5 tools)
+    'post_social_image_list',
+    'post_social_image_create',
+    'post_social_image_get',
+    'post_social_image_update',
+    'post_social_image_delete',
     // Story (4 tools)
     'story_list',
     'story_get',
@@ -98,7 +104,7 @@ test('Đăng ký đầy đủ toàn bộ 33 domain tools của hệ thống MCP'
   for (const name of expectedTools) {
     assert.ok(registeredToolNames.includes(name), `Thiếu tool: ${name}`);
   }
-  assert.equal(registeredToolNames.length, 33);
+  assert.equal(registeredToolNames.length, 38);
 });
 
 test('Validation schema của các tools phản ánh đúng rule của Laravel backend', () => {

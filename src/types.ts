@@ -540,6 +540,37 @@ export interface DeletePostSocialLinkResult {
   readonly deleted: boolean;
 }
 
+export interface PostSocialImageItem {
+  readonly id: number;
+  readonly post_social_id: number;
+  readonly image: string | null;
+  readonly image_url: string | null;
+  readonly prompt: string | null;
+  readonly user_id: number | null;
+  readonly user_name: string | null;
+  readonly created_at: string | null;
+  readonly updated_at: string | null;
+}
+
+export interface StorePostSocialImagePayload {
+  readonly image?: string | null;
+  readonly prompt?: string | null;
+  readonly user_id?: number | null;
+  readonly fields?: FieldsParam;
+}
+
+export interface UpdatePostSocialImagePayload {
+  readonly image?: string | null;
+  readonly prompt?: string | null;
+  readonly fields?: FieldsParam;
+}
+
+export interface DeletePostSocialImageResult {
+  readonly id: number;
+  readonly post_social_id: number;
+  readonly deleted: boolean;
+}
+
 // -------------------------------------------------------------
 // Short Video Types (Kịch bản Video Ngắn)
 // -------------------------------------------------------------

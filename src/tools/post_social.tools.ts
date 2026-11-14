@@ -5,9 +5,11 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { apiClient } from '../client.js';
 import type {
+  DeletePostSocialImageResult,
   DeletePostSocialLinkResult,
   DeletePostSocialResult,
   PostSocialDetail,
+  PostSocialImageItem,
   PostSocialItem,
   PostSocialLinkItem,
 } from '../types.js';
@@ -152,6 +154,93 @@ export function registerPostSocialTools(server: McpServer): void {
     },
     async ({ id, link_id }) => {
       const res = await apiClient.delete<DeletePostSocialLinkResult>(`post-socials/${id}/links/${link_id}`);
+      return {
+        content: [{ type: 'text', text: JSON.stringify(res, null, 2) }],
+      };
+    }
+  );
+
+  // 8. Danh sách ảnh minh họa của bài trích đoạn
+  server.tool(
+    'post_social_image_list',
+    'Lấy danh sách ảnh minh họa và prompt của một bài trích đoạn mạng xã hội.',
+    {
+      id: z.number().int().positive().describe('ID bài trích đoạn'),
+      fields: z.union([z.string(), z.array(z.string())]).optional().describe('Lọc các trường trả về (Sparse Fieldsets)'),
+    },
+    async ({ id, ...params }) => {
+      const res = await apiClient.get<PostSocialImageItem[]>(`post-socials/${id}/images`, params);
+      return {
+        content: [{ type: 'text', text: JSON.stringify(res, null, 2) }],
+      };
+    }
+  );
+
+  // 9. Thêm ảnh minh họa cho bài trích đoạn
+  server.tool(
+    'post_social_image_create',
+    'Thêm ảnh minh họa mới kèm prompt cho bài trích đoạn mạng xã hội.',
+    {
+      id: z.number().int().positive().describe('ID bài trích đoạn'),
+      image: z.string().nullable().optional().describe('Đường dẫn ảnh minh họa (tùy chọn)'),
+      prompt: z.string().max(10000).nullable().optional().describe('Nội dung prompt tạo ảnh (tối đa 10000 ký tự)'),
+      user_id: z.number().int().positive().nullable().optional().describe('ID người tạo ảnh (chỉ Root/Admin được chỉ định)'),
+      fields: z.union([z.string(), z.array(z.string())]).optional().describe('Lọc các trường trả về sau khi tạo'),
+    },
+    async ({ id, ...payload }) => {
+      const res = await apiClient.post<PostSocialImageItem>(`post-socials/${id}/images`, payload);
+      return {
+        content: [{ type: 'text', text: JSON.stringify(res, null, 2) }],
+      };
+    }
+  );
+
+  // 10. Chi tiết ảnh minh họa
+  server.tool(
+    'post_social_image_get',
+    'Xem chi tiết một ảnh minh họa và prompt của bài trích đoạn mạng xã hội.',
+    {
+      id: z.number().int().positive().describe('ID bài trích đoạn'),
+      image_id: z.number().int().positive().describe('ID ảnh minh họa'),
+      fields: z.union([z.string(), z.array(z.string())]).optional().describe('Lọc các trường trả về (Sparse Fieldsets)'),
+    },
+    async ({ id, image_id, ...params }) => {
+      const res = await apiClient.get<PostSocialImageItem>(`post-socials/${id}/images/${image_id}`, params);
+      return {
+        content: [{ type: 'text', text: JSON.stringify(res, null, 2) }],
+      };
+    }
+  );
+
+  // 11. Cập nhật ảnh minh họa
+  server.tool(
+    'post_social_image_update',
+    'Cập nhật ảnh minh họa hoặc prompt của bài trích đoạn mạng xã hội.',
+    {
+      id: z.number().int().positive().describe('ID bài trích đoạn'),
+      image_id: z.number().int().positive().describe('ID ảnh minh họa cần cập nhật'),
+      image: z.string().nullable().optional().describe('Đường dẫn ảnh minh họa mới'),
+      prompt: z.string().max(10000).nullable().optional().describe('Nội dung prompt mới (tối đa 10000 ký tự)'),
+      fields: z.union([z.string(), z.array(z.string())]).optional().describe('Lọc các trường trả về sau khi cập nhật'),
+    },
+    async ({ id, image_id, ...payload }) => {
+      const res = await apiClient.patch<PostSocialImageItem>(`post-socials/${id}/images/${image_id}`, payload);
+      return {
+        content: [{ type: 'text', text: JSON.stringify(res, null, 2) }],
+      };
+    }
+  );
+
+  // 12. Xóa ảnh minh họa
+  server.tool(
+    'post_social_image_delete',
+    'Xóa ảnh minh họa khỏi bài trích đoạn mạng xã hội.',
+    {
+      id: z.number().int().positive().describe('ID bài trích đoạn'),
+      image_id: z.number().int().positive().describe('ID ảnh minh họa cần xóa'),
+    },
+    async ({ id, image_id }) => {
+      const res = await apiClient.delete<DeletePostSocialImageResult>(`post-socials/${id}/images/${image_id}`);
       return {
         content: [{ type: 'text', text: JSON.stringify(res, null, 2) }],
       };
