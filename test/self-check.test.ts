@@ -9,6 +9,7 @@ import { config } from '../src/config.js';
 import { registerCategoryTools } from '../src/tools/category.tools.js';
 import { registerChapterTools } from '../src/tools/chapter.tools.js';
 import { registerCommentTools } from '../src/tools/comment.tools.js';
+import { registerAuditTools } from '../src/tools/audit.tools.js';
 import { registerPostSocialTools } from '../src/tools/post_social.tools.js';
 import { registerShortVideoTools } from '../src/tools/short_video.tools.js';
 import { registerStoryTools } from '../src/tools/story.tools.js';
@@ -45,6 +46,7 @@ test('Đăng ký đầy đủ toàn bộ 33 domain tools của hệ thống MCP'
   registerCommentTools(server);
   registerPostSocialTools(server);
   registerShortVideoTools(server);
+  registerAuditTools(server);
 
   // Đảm bảo không ném ngoại lệ khi đăng ký các công cụ
   assert.ok(server);
@@ -60,6 +62,10 @@ test('Đăng ký đầy đủ toàn bộ 33 domain tools của hệ thống MCP'
     'post_social_image_get',
     'post_social_image_update',
     'post_social_image_delete',
+    // Audit (3 tools)
+    'audit_feed',
+    'audit_mark',
+    'audit_stats',
     // Story (4 tools)
     'story_list',
     'story_get',
@@ -104,7 +110,7 @@ test('Đăng ký đầy đủ toàn bộ 33 domain tools của hệ thống MCP'
   for (const name of expectedTools) {
     assert.ok(registeredToolNames.includes(name), `Thiếu tool: ${name}`);
   }
-  assert.equal(registeredToolNames.length, 38);
+  assert.equal(registeredToolNames.length, 41);
 });
 
 test('Validation schema của các tools phản ánh đúng rule của Laravel backend', () => {
@@ -119,6 +125,7 @@ test('Validation schema của các tools phản ánh đúng rule của Laravel b
   registerCommentTools(server);
   registerPostSocialTools(server);
   registerShortVideoTools(server);
+  registerAuditTools(server);
 
   const tools = (
     server as unknown as {

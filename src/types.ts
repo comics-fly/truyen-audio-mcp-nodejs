@@ -670,3 +670,56 @@ export interface DeleteShortVideoLinkResult {
   readonly link_id: number;
   readonly deleted: boolean;
 }
+
+// -------------------------------------------------------------
+// Audit & Freshness Feed Types
+// -------------------------------------------------------------
+export type AuditFeedType =
+  | 'new_stories'
+  | 'stories_with_new_chapters'
+  | 'new_chapters'
+  | 'new_audios'
+  | 'modified'
+  | 'unchecked';
+
+export interface AuditFeedItem {
+  readonly log_id?: number;
+  readonly action?: string;
+  readonly event_time?: string | null;
+  readonly story?: Record<string, unknown> | null;
+  readonly chapter?: Record<string, unknown> | null;
+  readonly actor?: { readonly id?: number; readonly name?: string } | null;
+  readonly audit?: Record<string, unknown> | null;
+  readonly diff?: { readonly old?: unknown; readonly new?: unknown } | null;
+  readonly description?: string | null;
+  readonly story_id?: number;
+  readonly story_title?: string;
+  readonly new_chapters_count?: number;
+  readonly latest_chapter_at?: string | null;
+  readonly latest_chapter?: { readonly id?: number; readonly chapter_number?: number; readonly title?: string } | null;
+  readonly audio_status?: string;
+  readonly is_checked?: boolean;
+  readonly status?: string;
+  readonly checked_at?: string | null;
+  readonly checked_by?: { readonly id?: number; readonly name?: string } | null;
+  readonly notes?: string | null;
+  readonly issues?: readonly unknown[] | null;
+}
+
+export interface AuditMarkResult {
+  readonly log_id?: number;
+  readonly target_type?: string;
+  readonly target_id?: number;
+  readonly status?: string;
+  readonly checked_at?: string | null;
+  readonly checked_by?: { readonly id?: number; readonly name?: string };
+}
+
+export interface AuditStats {
+  readonly new_stories_today?: number;
+  readonly new_chapters_today?: number;
+  readonly new_audios_today?: number;
+  readonly modified_today?: number;
+  readonly unchecked_total?: number;
+  readonly checked_today?: number;
+}
